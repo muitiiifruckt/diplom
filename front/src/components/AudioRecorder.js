@@ -16,62 +16,60 @@ const AudioRecorder = ({ onNewAudio }) => {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  const sendAudioToServer = async (audioBlob) => {
+  const sendAudioToServer = async (audioBlob, userAudioUrl) => {
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.wav');
-      
+
       const response = await fetch('http://localhost:8000/api/upload-audio', {
         method: 'POST',
         body: formData
       });
-      
+
       const result = await response.json();
       console.log('Аудио отправлено:', result);
+
+      if (result.download_url) {
+        const serverAudioUrl = `http://localhost:8000${result.download_url}`;
+        onNewAudio(userAudioUrl, serverAudioUrl);
+      }
     } catch (error) {
       console.error('Ошибка отправки:', error);
     }
   };
+  
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
-      
+
       mediaRecorderRef.current.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data);
       };
-      
+
       mediaRecorderRef.current.onstop = async () => {
         try {
-          // Создаём Blob из полученных данных записи
-          const recordedBlob = new Blob(audioChunksRef.current, { 
-            type: mediaRecorderRef.current.mimeType 
+          const recordedBlob = new Blob(audioChunksRef.current, {
+            type: mediaRecorderRef.current.mimeType
           });
-          
-          // Конвертируем в ArrayBuffer
+
           const arrayBuffer = await recordedBlob.arrayBuffer();
-          
-          // Создаём AudioContext и декодируем данные
           const audioContext = new AudioContext();
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-          
-          // Конвертируем в WAV
+
           const wavBlob = await convertToWav(audioBuffer);
-          
-          // Создаём URL для воспроизведения
-          const audioUrl = URL.createObjectURL(wavBlob);
-          onNewAudio(audioUrl);
-          
-          // Отправляем на сервер
-          await sendAudioToServer(wavBlob);
+          const userAudioUrl = URL.createObjectURL(wavBlob);
+
+          // Ждём отправки и добавляем оба сообщения
+          await sendAudioToServer(wavBlob, userAudioUrl);
         } catch (error) {
           console.error('Ошибка обработки аудио:', error);
         } finally {
           audioChunksRef.current = [];
         }
       };
-      
+
       mediaRecorderRef.current.start();
       setIsRecording(true);
     } catch (err) {

@@ -6,15 +6,28 @@ import Message from './components/Message';
 function App() {
   const [messages, setMessages] = useState([]);
 
-  const handleNewAudio = (audioUrl) => {
-    setMessages([...messages, {
-      id: Date.now(),
-      type: 'audio',
-      content: audioUrl,
-      sender: 'user',
-      timestamp: new Date().toLocaleTimeString()
-    }]);
+  const handleNewAudio = (userAudioUrl, serverAudioUrl) => {
+    const timestamp = new Date().toLocaleTimeString();
+  
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        id: Date.now(),
+        type: 'audio',
+        content: userAudioUrl,
+        sender: 'user',
+        timestamp: timestamp,
+      },
+      {
+        id: Date.now() + 1,
+        type: 'audio',
+        content: serverAudioUrl,
+        sender: 'bot',
+        timestamp: timestamp,
+      }
+    ]);
   };
+  
 
   return (
     <div className="chat-app">

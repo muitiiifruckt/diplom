@@ -3,8 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from help import recognize_speech_from_wav
 from to_audio import text_to_speech
+from fastapi.staticfiles import StaticFiles
 app = FastAPI()
+
 from req_gemma import request_gemma2
+# Монтируем папку send как /static
+app.mount("/static", StaticFiles(directory="send"), name="static")
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
@@ -24,8 +28,10 @@ async def upload_audio(audio: UploadFile = File(...)):
         file_location = f"{UPLOAD_DIR}/{audio.filename}"
         with open(file_location, "wb+") as file_object:
             file_object.write(await audio.read())
-        text = recognize_speech_from_wav(r"recording.wav")
+        text = recognize_speech_from_wav(r"uploads\recording.wav")
+        print(text)
         answer = request_gemma2(text)
+        print(answer)
         save_wav = text_to_speech(answer)
         
         
