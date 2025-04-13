@@ -30,7 +30,7 @@ async def upload_audio(audio: UploadFile = File(...)):
             file_object.write(await audio.read())
         text = recognize_speech_from_wav(r"uploads\recording.wav")
         print(text)
-        answer = request_gemma2(text)
+        answer = request_gemma2(text + "   give small answer")
         print(answer)
         save_wav = text_to_speech(answer)
         
