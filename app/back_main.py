@@ -9,10 +9,11 @@ from database import get_db
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
-from models import User, Base
+from models import User, Base, Word
 from schemas import UserCreate
 from crypto import pwd_context,create_access_token
 from fastapi.security import OAuth2PasswordRequestForm
+import random 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -79,3 +80,30 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=401, detail="Неверные данные")
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/get-random-word")
+def get_random_word(db: Session = Depends(get_db)):
+    words = db.query(Word).all()
+    if not words:
+        raise HTTPException(status_code=404, detail="Слов нет в базе")
+    word = random.choice(words)
+    return {"word": word.word}
+
+@app.post("/check-translation")
+def check_translation(data: dict, db: Session = Depends(get_db)):
+    word_text = data.get("word")
+    user_translation = data.get("user_translation")
+
+    if not word_text or not user_translation:
+        raise HTTPException(status_code=400, detail="Неверный формат запроса")
+
+    word_entry = db.query(Word).filter(Word.word == word_text).first()
+
+    if not word_entry:
+        raise HTTPException(status_code=404, detail="Слово не найдено")
+
+    correct = word_entry.translation.strip().lower() == user_translation.strip().lower()
+    return {
+        "correct": correct,
+        "correct_translation": word_entry.translation
+    }

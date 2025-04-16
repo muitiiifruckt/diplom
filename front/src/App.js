@@ -4,11 +4,14 @@ import AudioRecorder from './components/AudioRecorder';
 import Message from './components/Message';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
+import WordGuessPage from './components/WordGuessPage';
+
 
 function App() {
   const [user, setUser] = useState(null);
   const [isLoginFormVisible, setLoginFormVisible] = useState(false);
   const [isRegisterFormVisible, setRegisterFormVisible] = useState(false);
+  const [isWordPageVisible, setWordPageVisible] = useState(false);
   const [messages, setMessages] = useState([]);
 
   const handleLogin = async (username, password) => {
@@ -97,16 +100,21 @@ function App() {
       );
     });
   };
-
+// Функция для возвращения в чат
+const handleReturnToChat = () => {
+  setWordPageVisible(false);
+};
   return (
     <div className="chat-app">
       <div className="chat-header">
         <h1>Голосовой чат</h1>
+
         <div className="auth-buttons">
           {user ? (
             <>
               <span>Привет, {user.username}!</span>
               <button onClick={handleLogout}>Выйти</button>
+              <button onClick={() => setWordPageVisible(!isWordPageVisible)}>Слова</button>
             </>
           ) : (
             <>
@@ -120,7 +128,8 @@ function App() {
       {isLoginFormVisible && <LoginForm onSubmit={handleLogin} />}
       {isRegisterFormVisible && <RegisterForm onSubmit={handleRegister} />}
 
-      {user && (
+      {/* Если пользователь вошёл и не выбрал "Слова" — показать чат */}
+      {user && !isWordPageVisible && (
         <>
           <div className="chat-messages">
             {messages.map((message) => (
@@ -133,8 +142,10 @@ function App() {
           </div>
         </>
       )}
+
+      {/* Если выбрана страница "Слова" */}
+      {user && isWordPageVisible && <WordGuessPage onReturnToChat={handleReturnToChat} />}
     </div>
   );
 }
-
 export default App;
