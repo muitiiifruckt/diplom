@@ -20,26 +20,33 @@ const AudioRecorder = ({ onNewAudio }) => {
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.wav');
-      
+      console.log( localStorage.getItem('chatId'))
+      console.log("sdfsdfsd")
+      formData.append('chat_id', localStorage.getItem('chatId')); // Или из пропсов / состояния, если есть
+  
+      const token = localStorage.getItem('token'); // не забудь про авторизацию
+  
       const response = await fetch('http://localhost:8000/api/upload-audio', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData
       });
-      
+  
       const result = await response.json();
-      
+  
       const serverAudioUrl = `http://localhost:8000${result.download_url}`;
-      
-      // Добавляем расшифровки в результат
       const userTranscript = result.user_transcript;
       const modelTranscript = result.model_transcript;
-    
+  
       return { serverAudioUrl, userTranscript, modelTranscript };
     } catch (error) {
       console.error('Ошибка отправки:', error);
       return null;
     }
   };
+  
   
   
 

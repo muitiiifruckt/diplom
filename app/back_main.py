@@ -5,11 +5,10 @@ from help import recognize_speech_from_wav
 from to_audio import text_to_speech
 from fastapi.staticfiles import StaticFiles
 import logging
-from database import get_db
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from database import SessionLocal, engine
-from models import User, Base, Word, Chat
+from database import SessionLocal, engine,get_db
+from models import User, Base, Word, Chat, ChatMessagePair
 from schemas import UserCreate
 from crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
@@ -37,30 +36,59 @@ app.add_middleware(
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+from fastapi import Form
+
+def save_message_pair_to_db(
+    db: Session,
+    chat_id: int,
+    user_audio: bytes,
+    user_transcript: str,
+    bot_audio: bytes,
+    bot_transcript: str
+):
+    message_pair = ChatMessagePair(
+        chat_id=chat_id,
+        user_audio=user_audio,
+        user_transcript=user_transcript,
+        bot_audio=bot_audio,
+        bot_transcript=bot_transcript
+    )
+    db.add(message_pair)
+    db.commit()
+
+
 @app.post("/api/upload-audio")
-async def upload_audio(audio: UploadFile = File(...)):
+async def upload_audio(
+    audio: UploadFile = File(...),
+    chat_id: int = Form(...),
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
     try:
-        # 1. Сохраняем загруженный файл
         file_location = os.path.join(UPLOAD_DIR, audio.filename)
+        audio_data = await audio.read()
         with open(file_location, "wb+") as file_object:
-            file_object.write(await audio.read())
+            file_object.write(audio_data)
 
-        # 2. Распознаём речь пользователя
         user_text = recognize_speech_from_wav(file_location)
-        print("Речь пользователя:", user_text)
-
-        # 3. Получаем ответ от модели
         model_text = request_gemma2(user_text + "   give small answer")
-        print("Ответ модели:", model_text)
+        save_wav = text_to_speech(model_text)
 
-        # 4. Преобразуем ответ в аудиофайл
-        save_wav = text_to_speech(model_text)  # сохраняет в send/output.wav
+        with open("send/output.wav", "rb") as bot_audio_file:
+            bot_audio_data = bot_audio_file.read()
 
-        # 5. Возвращаем всё необходимое
+        # 💾 сохраняем в базу
+        save_message_pair_to_db(
+            db=db,
+            chat_id=chat_id,
+            user_audio=audio_data,
+            user_transcript=user_text,
+            bot_audio=bot_audio_data,
+            bot_transcript=model_text
+        )
+
         return {
             "status": "success",
-            "filename": "output.wav",
-            "saved_path": "send/output.wav",
             "download_url": "/static/output.wav",
             "user_transcript": user_text,
             "model_transcript": model_text,
@@ -69,6 +97,7 @@ async def upload_audio(audio: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
     
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -127,7 +156,7 @@ async def create_chat(db: Session = Depends(get_db), user: User = Depends(get_cu
         db.add(new_chat)
         db.commit()
         db.refresh(new_chat)
-
+        
         return {"chat_id": new_chat.id, "message": "Чат успешно создан."}
 
     except Exception as e:

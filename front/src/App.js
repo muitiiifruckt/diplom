@@ -13,6 +13,8 @@ function App() {
   const [isRegisterFormVisible, setRegisterFormVisible] = useState(false);
   const [isWordPageVisible, setWordPageVisible] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [chatId, setChatId] = useState(null);
+
 
   const handleLogin = async (username, password) => {
     const formData = new URLSearchParams();
@@ -62,8 +64,11 @@ function App() {
   };
 
   const handleLogout = () => {
-    setUser(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('chatId'); // 👈 ВАЖНО!
+    setUser(null);
+    setChatId(null); // если хранишь в состоянии
+    setMessages([]); // 💥 очищаем историю сообщений
   };
 
   const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
@@ -99,7 +104,7 @@ function App() {
       const userTranscriptMessage = {
         id: Date.now() + 3,
         type: 'text',
-        content: `Расшифровка пользователя: ${userTranscript}`,
+        content: `Ты: ${userTranscript}`,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString(),
       };
@@ -107,7 +112,7 @@ function App() {
       const modelTranscriptMessage = {
         id: Date.now() + 4,
         type: 'text',
-        content: `Ответ модели: ${modelTranscript}`,
+        content: `ИИ: ${modelTranscript}`,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString(),
       };
@@ -118,6 +123,30 @@ function App() {
         modelTranscriptMessage,
       ]);
     });
+  };
+  const handleCreateChat = async () => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await fetch("http://localhost:8000/api/create-chat", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        setChatId(data.chat_id);
+        localStorage.setItem('chatId', data.chat_id); // 👈 добавь это
+        alert("Чат создан успешно!");
+      } else {
+        alert("Ошибка: " + data.detail);
+      }
+    } catch (error) {
+      console.error("Ошибка при создании чата:", error);
+    }
   };
   
   
@@ -151,18 +180,28 @@ const handleReturnToChat = () => {
 
       {/* Если пользователь вошёл и не выбрал "Слова" — показать чат */}
       {user && !isWordPageVisible && (
-        <>
-          <div className="chat-messages">
-            {messages.map((message) => (
-              <Message key={message.id} message={message} />
-            ))}
+  <>
+        {!chatId ? (
+          <div style={{ textAlign: "center", marginTop: "1rem" }}>
+            <button onClick={handleCreateChat}>Начать чат</button>
           </div>
+        ) : (
+          <>
+            <div className="chat-messages">
+              {messages.map((message) => (
+                <Message key={message.id} message={message} />
+              ))}
+            </div>
 
-          <div className="chat-input">
-            <AudioRecorder onNewAudio={handleNewAudio} />
-          </div>
-        </>
-      )}
+            <div className="chat-input">
+            <AudioRecorder onNewAudio={handleNewAudio} chatId={chatId} />
+
+            </div>
+          </>
+        )}
+      </>
+    )}
+
 
       {/* Если выбрана страница "Слова" */}
       {user && isWordPageVisible && <WordGuessPage onReturnToChat={handleReturnToChat} />}
