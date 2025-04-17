@@ -38,25 +38,33 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @app.post("/api/upload-audio")
 async def upload_audio(audio: UploadFile = File(...)):
     try:
-        # Сохраняем файл
-        file_location = f"{UPLOAD_DIR}/{audio.filename}"
+        # 1. Сохраняем загруженный файл
+        file_location = os.path.join(UPLOAD_DIR, audio.filename)
         with open(file_location, "wb+") as file_object:
             file_object.write(await audio.read())
-        text = recognize_speech_from_wav(r"uploads\recording.wav")
-        print(text)
-        answer = request_gemma2(text + "   give small answer")
-        print(answer)
-        save_wav = text_to_speech(answer)
-        
-        
-        file_path = "send/output.wav"
+
+        # 2. Распознаём речь пользователя
+        user_text = recognize_speech_from_wav(file_location)
+        print("Речь пользователя:", user_text)
+
+        # 3. Получаем ответ от модели
+        model_text = request_gemma2(user_text + "   give small answer")
+        print("Ответ модели:", model_text)
+
+        # 4. Преобразуем ответ в аудиофайл
+        save_wav = text_to_speech(model_text)  # сохраняет в send/output.wav
+
+        # 5. Возвращаем всё необходимое
         return {
-        "status": "success",
-        "filename": "output.wav",
-        "saved_path": file_path,
-        "download_url": "/static/output.wav",  # URL для скачивания
-        "message": "Audio uploaded successfully"
-    }
+            "status": "success",
+            "filename": "output.wav",
+            "saved_path": "send/output.wav",
+            "download_url": "/static/output.wav",
+            "user_transcript": user_text,
+            "model_transcript": model_text,
+            "message": "Аудио и тексты успешно обработаны"
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     

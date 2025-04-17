@@ -68,6 +68,7 @@ function App() {
 
   const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
     const timestamp = new Date().toLocaleTimeString();
+    
     const userMessage = {
       id: Date.now(),
       type: 'audio',
@@ -75,7 +76,7 @@ function App() {
       sender: 'user',
       timestamp: timestamp,
     };
-
+  
     const loadingMessage = {
       id: Date.now() + 1,
       type: 'loading',
@@ -83,23 +84,43 @@ function App() {
       sender: 'bot',
       timestamp: timestamp,
     };
-
+  
     setMessages((prev) => [...prev, userMessage, loadingMessage]);
-
-    serverAudioUrlPromise.then((serverAudioUrl) => {
-      const botMessage = {
+  
+    serverAudioUrlPromise.then(({ serverAudioUrl, userTranscript, modelTranscript }) => {
+      const botMessageAudio = {
         id: Date.now() + 2,
         type: 'audio',
         content: serverAudioUrl,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString(),
       };
-
-      setMessages((prev) =>
-        prev.map((msg) => (msg.type === 'loading' ? botMessage : msg))
-      );
+  
+      const userTranscriptMessage = {
+        id: Date.now() + 3,
+        type: 'text',
+        content: `Расшифровка пользователя: ${userTranscript}`,
+        sender: 'bot',
+        timestamp: new Date().toLocaleTimeString(),
+      };
+  
+      const modelTranscriptMessage = {
+        id: Date.now() + 4,
+        type: 'text',
+        content: `Ответ модели: ${modelTranscript}`,
+        sender: 'bot',
+        timestamp: new Date().toLocaleTimeString(),
+      };
+  
+      setMessages((prev) => [
+        ...prev.map((msg) => (msg.type === 'loading' ? botMessageAudio : msg)),
+        userTranscriptMessage,
+        modelTranscriptMessage,
+      ]);
     });
   };
+  
+  
 // Функция для возвращения в чат
 const handleReturnToChat = () => {
   setWordPageVisible(false);
