@@ -9,10 +9,12 @@ from database import get_db
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
-from models import User, Base, Word
+from models import User, Base, Word, Chat
 from schemas import UserCreate
-from crypto import pwd_context,create_access_token
+from crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
+from req_gemma import request_gemma2
+
 import random 
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-from req_gemma import request_gemma2
+
 # Монтируем папку send как /static
 app.mount("/static", StaticFiles(directory="send"), name="static")
 # Настройка CORS
@@ -115,3 +117,18 @@ def check_translation(data: dict, db: Session = Depends(get_db)):
         "correct": correct,
         "correct_translation": word_entry.translation
     }
+    
+@app.post("/api/create-chat")
+async def create_chat(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Создание чата для текущего пользователя."""
+    try:
+        # Создаем новый чат для текущего пользователя
+        new_chat = Chat(user_id=user.id)
+        db.add(new_chat)
+        db.commit()
+        db.refresh(new_chat)
+
+        return {"chat_id": new_chat.id, "message": "Чат успешно создан."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
