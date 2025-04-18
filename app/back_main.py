@@ -13,7 +13,7 @@ from schemas import UserCreate
 from crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from req_gemma import request_gemma2
-
+from fastapi import Form
 import random 
 
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +36,7 @@ app.add_middleware(
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-from fastapi import Form
+
 
 def save_message_pair_to_db(
     db: Session,
@@ -77,7 +77,7 @@ async def upload_audio(
         with open("send/output.wav", "rb") as bot_audio_file:
             bot_audio_data = bot_audio_file.read()
 
-        # 💾 сохраняем в базу
+        
         save_message_pair_to_db(
             db=db,
             chat_id=chat_id,
@@ -151,7 +151,7 @@ def check_translation(data: dict, db: Session = Depends(get_db)):
 async def create_chat(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Создание чата для текущего пользователя."""
     try:
-        # Создаем новый чат для текущего пользователя
+        
         new_chat = Chat(user_id=user.id)
         db.add(new_chat)
         db.commit()
@@ -161,3 +161,48 @@ async def create_chat(db: Session = Depends(get_db), user: User = Depends(get_cu
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/api/analyze-user-transcripts")
+def analyze_user_transcripts(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    # 1. Получить последний чат пользователя
+    last_chat = (
+        db.query(Chat)
+        .filter(Chat.user_id == user.id)
+        .order_by(Chat.created_at.desc())
+        .first()
+    )
+    print('last chat',last_chat)
+    if not last_chat:
+        return {"error": "У пользователя нет чатов"}
+
+    # 2. Собрать все тексты пользователя
+    transcripts = (
+        db.query(ChatMessagePair.user_transcript)
+        .filter(ChatMessagePair.chat_id == last_chat.id)
+        .filter(ChatMessagePair.user_transcript.isnot(None))
+        .all()
+    )
+    print('transcripts',transcripts)
+
+    if not transcripts:
+        return {"error": "Нет сообщений для анализа"}
+
+    # 3. Сформировать текст для анализа
+    joined_text = "\n".join([t[0] for t in transcripts])
+    prompt = (
+        "Проанализируй следующие предложения с точки зрения синтаксиса и грамматики. "
+        "Предложи улучшения для каждого, если нужно. Тексты:\n\n"
+        f"{joined_text}"
+    )
+
+    # 4. Отправить в gemma2
+    analysis = request_gemma2(prompt)
+    print('analys',analysis)
+
+    return {
+        "prompt_sent": prompt,
+        "analysis_result": analysis
+    }

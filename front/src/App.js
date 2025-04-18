@@ -5,7 +5,7 @@ import Message from './components/Message';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import WordGuessPage from './components/WordGuessPage';
-
+import AnalysisModal from './components/chat_analys';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -177,6 +177,8 @@ const handleReturnToChat = () => {
 
       {isLoginFormVisible && <LoginForm onSubmit={handleLogin} />}
       {isRegisterFormVisible && <RegisterForm onSubmit={handleRegister} />}
+      
+
 
       {/* Если пользователь вошёл и не выбрал "Слова" — показать чат */}
       {user && !isWordPageVisible && (
@@ -187,6 +189,7 @@ const handleReturnToChat = () => {
           </div>
         ) : (
           <>
+          
             <div className="chat-messages">
               {messages.map((message) => (
                 <Message key={message.id} message={message} />
@@ -195,6 +198,7 @@ const handleReturnToChat = () => {
 
             <div className="chat-input">
             <AudioRecorder onNewAudio={handleNewAudio} chatId={chatId} />
+            <AnalysisModal />
 
             </div>
           </>
