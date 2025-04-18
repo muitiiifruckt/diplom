@@ -64,25 +64,27 @@ const AudioRecorder = ({ onNewAudio }) => {
           const recordedBlob = new Blob(audioChunksRef.current, {
             type: mediaRecorderRef.current.mimeType,
           });
-
+      
           const arrayBuffer = await recordedBlob.arrayBuffer();
           const audioContext = new AudioContext();
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
+      
           const wavBlob = await convertToWav(audioBuffer);
           const userAudioUrl = URL.createObjectURL(wavBlob);
-
-          // 👉 Показываем сообщение от пользователя СРАЗУ
+      
+          // Создаем промис для получения ответа с сервера
           const serverAudioUrlPromise = sendAudioToServer(wavBlob);
-          onNewAudio(userAudioUrl, serverAudioUrlPromise);
-
-          
+      
+          // Передаем данные, включая новый userAudioUrl и серверный промис
+          onNewAudio(userAudioUrl, serverAudioUrlPromise);  
+      
         } catch (error) {
           console.error('Ошибка обработки аудио:', error);
         } finally {
-          audioChunksRef.current = [];
+          audioChunksRef.current = []; // Очищаем данные записи
         }
       };
+      
 
       mediaRecorderRef.current.start();
       setIsRecording(true);

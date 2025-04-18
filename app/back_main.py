@@ -86,7 +86,7 @@ async def upload_audio(
             bot_audio=bot_audio_data,
             bot_transcript=model_text
         )
-
+        print("answer",model_text)
         return {
             "status": "success",
             "download_url": "/static/output.wav",

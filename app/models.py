@@ -18,14 +18,13 @@ class Chat(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
-
     user = relationship("User", back_populates="chats")
     message_pairs = relationship("ChatMessagePair", back_populates="chat", cascade="all, delete-orphan")
 
 
 class ChatMessagePair(Base):
     __tablename__ = "chat_message_pairs"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     chat_id = Column(Integer, ForeignKey("chats.id"))
 

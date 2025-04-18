@@ -6,7 +6,7 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import WordGuessPage from './components/WordGuessPage';
 import AnalysisModal from './components/chat_analys';
-
+import {  useRef } from 'react'; // Добавляем useRef
 function App() {
   const [user, setUser] = useState(null);
   const [isLoginFormVisible, setLoginFormVisible] = useState(false);
@@ -64,6 +64,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    resetChat();
     localStorage.removeItem('token');
     localStorage.removeItem('chatId'); // 👈 ВАЖНО!
     setUser(null);
@@ -71,59 +72,83 @@ function App() {
     setMessages([]); // 💥 очищаем историю сообщений
   };
 
-  const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
-    const timestamp = new Date().toLocaleTimeString();
-    
-    const userMessage = {
-      id: Date.now(),
+  const resetChat = () => {
+    setMessages([]); // Очистить все старые сообщения
+  };
+  
+  const messageIdRef = useRef(0); // Добавляем реф для генерации ID
+
+  // В компоненте App.js
+const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
+  const baseId = messageIdRef.current;
+  messageIdRef.current += 4; // Увеличиваем базовый ID
+
+  const timestamp = new Date().toLocaleTimeString();
+
+  // Генерируем уникальный ключ для сообщения
+  const uniqueKey = Date.now();
+
+  const userMessage = {
+      id: `${baseId}-${uniqueKey}-user`, // Уникальный составной ID
       type: 'audio',
       content: userAudioUrl,
       sender: 'user',
-      timestamp: timestamp,
-    };
-  
-    const loadingMessage = {
-      id: Date.now() + 1,
+      timestamp,
+  };
+
+  const loadingMessage = {
+      id: `${baseId}-${uniqueKey}-loading`,
       type: 'loading',
       content: 'Бот генерирует ответ...',
       sender: 'bot',
-      timestamp: timestamp,
-    };
-  
-    setMessages((prev) => [...prev, userMessage, loadingMessage]);
-  
-    serverAudioUrlPromise.then(({ serverAudioUrl, userTranscript, modelTranscript }) => {
-      const botMessageAudio = {
-        id: Date.now() + 2,
-        type: 'audio',
-        content: serverAudioUrl,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-      };
-  
-      const userTranscriptMessage = {
-        id: Date.now() + 3,
-        type: 'text',
-        content: `Ты: ${userTranscript}`,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-      };
-  
-      const modelTranscriptMessage = {
-        id: Date.now() + 4,
-        type: 'text',
-        content: `ИИ: ${modelTranscript}`,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-      };
-  
-      setMessages((prev) => [
-        ...prev.map((msg) => (msg.type === 'loading' ? botMessageAudio : msg)),
-        userTranscriptMessage,
-        modelTranscriptMessage,
-      ]);
-    });
+      timestamp,
   };
+
+  setMessages((prev) => [...prev, userMessage, loadingMessage]);
+
+  serverAudioUrlPromise.then(({ serverAudioUrl, userTranscript, modelTranscript }) => {
+      const responseTime = new Date().toLocaleTimeString();
+
+      const botMessageAudio = {
+          id: loadingMessage.id, // Используем ID loading сообщения
+          type: 'audio',
+          content: `${serverAudioUrl}?t=${Date.now()}`, // Добавляем timestamp к URL
+          sender: 'bot',
+          timestamp: responseTime,
+      };
+
+      // Остальные сообщения
+      const userTranscriptMessage = {
+          id: `${baseId}-${uniqueKey}-user-transcript`,
+          type: 'text',
+          content: `Ты: ${userTranscript}`,
+          sender: 'bot',
+          timestamp: responseTime,
+      };
+
+      const modelTranscriptMessage = {
+          id: `${baseId}-${uniqueKey}-model-transcript`,
+          type: 'text',
+          content: `ИИ: ${modelTranscript}`,
+          sender: 'bot',
+          timestamp: responseTime,
+      };
+
+      setMessages((prev) => [
+          ...prev.filter(msg => msg.id !== loadingMessage.id),
+          botMessageAudio,
+          userTranscriptMessage,
+          modelTranscriptMessage
+      ]);
+  }).catch(error => {
+      console.error('Ошибка:', error);
+      // Удаляем loading сообщение при ошибке
+      setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id));
+  });
+};
+  
+  
+  
   const handleCreateChat = async () => {
     const token = localStorage.getItem("token");
   
