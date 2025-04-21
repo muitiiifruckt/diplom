@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import WordHighlighter from "./WordHighlighter";
 
 function WordGuessPage({ onReturnToChat }) {
   const [word, setWord] = useState('');
@@ -7,6 +8,9 @@ function WordGuessPage({ onReturnToChat }) {
   const [examples, setExamples] = useState([]);
   const [showExamples, setShowExamples] = useState(false);
   const [loadingExamples, setLoadingExamples] = useState(false);
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [wordInfo, setWordInfo] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const fetchWord = useCallback(() => {
     fetch('http://localhost:8000/get-random-word', {
@@ -66,11 +70,32 @@ function WordGuessPage({ onReturnToChat }) {
       });
   };
 
+  const handleWordClick = (word) => {
+    setSelectedWord(word);
+    // Убираем автоматическое открытие модального окна до получения ответа от сервера
+    fetch('http://localhost:8000/word-info', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ word })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setWordInfo(data); // Сохраняем информацию о слове
+        setShowModal(true); // Открываем модальное окно только после успешного ответа
+      })
+      .catch(err => console.error('Ошибка при получении информации о слове:', err));
+  };
+  
+  
   useEffect(() => {
     fetchWord();
   }, [fetchWord]);
 
   return (
+    
     <div className="word-guess-page">
       <h2>Угадай перевод</h2>
 
@@ -97,13 +122,70 @@ function WordGuessPage({ onReturnToChat }) {
           <h4>Примеры использования:</h4>
           <ul>
             {examples.map((ex, idx) => (
+              <li key={idx}>
+                <WordHighlighter
+                  text={ex}
+                  selectedWord={selectedWord}
+                  onWordClick={handleWordClick}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {showModal && wordInfo && (
+  <div className="modal-overlay" onClick={() => setShowModal(false)} style={overlayStyle}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={modalStyle}>
+      <button onClick={() => setShowModal(false)} style={closeButtonStyle}>×</button>
+      <h3>Слово: <em>{selectedWord}</em></h3>
+      <p><strong>Перевод:</strong> {wordInfo.translation}</p>
+      {wordInfo.examples && (
+        <div>
+          <strong>Примеры:</strong>
+          <ul>
+            {wordInfo.examples.split('\n').filter(Boolean).map((ex, idx) => (
               <li key={idx}>{ex}</li>
             ))}
           </ul>
         </div>
       )}
     </div>
+  </div>
+)}
+
+    </div>
   );
 }
 
 export default WordGuessPage;
+
+
+const overlayStyle = {
+  position: 'fixed',
+  top: 0, left: 0, right: 0, bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000
+};
+
+const modalStyle = {
+  backgroundColor: '#fff',
+  padding: '20px',
+  borderRadius: '10px',
+  maxWidth: '500px',
+  width: '90%',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+  position: 'relative'
+};
+
+const closeButtonStyle = {
+  position: 'absolute',
+  top: '10px',
+  right: '10px',
+  fontSize: '1.5rem',
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer'
+};

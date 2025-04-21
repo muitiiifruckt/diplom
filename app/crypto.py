@@ -35,7 +35,7 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-    except jwt.PyJWTError:
+    except jwt.JWTError:
         raise credentials_exception
     
     # Извлекаем пользователя по имени

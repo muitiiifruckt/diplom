@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import WordHighlighter from "./WordHighlighter";
 
 function PodcastPage({ onReturnToChat }) {
   const [podcast, setPodcast] = useState(null);
@@ -29,37 +30,7 @@ function PodcastPage({ onReturnToChat }) {
       .catch((err) => console.error("Ошибка при получении информации о слове:", err));
   };
 
-  const renderTranscript = () => {
-    const cleanedTranscript = podcast.transcript
-      .replace(/\s+/g, " ")  // заменяем кучу пробелов/табов/переносов на один пробел
-      .trim();               // убираем пробелы в начале и конце
   
-    return cleanedTranscript.split(" ").map((word, index) => {
-      const cleanWord = word.replace(/[.,!?;:()"\[\]]/g, "");
-      return (
-        <span
-          key={index}
-          onClick={() => handleWordClick(cleanWord)}
-          style={{
-            cursor: "pointer",
-            marginRight: "0.3em",
-            color: "#333",
-            padding: "2px 4px",
-            borderRadius: "4px",
-            transition: "background-color 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = "#e0f0ff";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = "transparent";
-          }}
-        >
-          {word + " "}
-        </span>
-      );
-    });
-  };
   
   
 
@@ -80,8 +51,13 @@ function PodcastPage({ onReturnToChat }) {
         style={{ width: "100%" }}
       />
       <div style={{ marginTop: "1rem", lineHeight: "1.6", fontSize: "1.1em" }}>
-        {renderTranscript()}
-      </div>
+        <WordHighlighter
+            text={podcast.transcript.replace(/\s+/g, " ").trim()}
+            selectedWord={selectedWord}
+            onWordClick={handleWordClick}
+        />
+        </div>
+
 
       {/* Модальное окно */}
       {showModal && wordInfo && (
