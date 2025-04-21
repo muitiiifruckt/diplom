@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import './App.css';
 import AudioRecorder from './components/AudioRecorder';
 import Message from './components/Message';
@@ -6,15 +6,16 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import WordGuessPage from './components/WordGuessPage';
 import AnalysisModal from './components/chat_analys';
-import {  useRef } from 'react'; // Добавляем useRef
+import PodcastPage from './components/PodcastPage';
+
 function App() {
   const [user, setUser] = useState(null);
   const [isLoginFormVisible, setLoginFormVisible] = useState(false);
   const [isRegisterFormVisible, setRegisterFormVisible] = useState(false);
-  const [isWordPageVisible, setWordPageVisible] = useState(false);
+  const [activePage, setActivePage] = useState("chat"); // "chat", "words", "podcast"
   const [messages, setMessages] = useState([]);
   const [chatId, setChatId] = useState(null);
-
+  const messageIdRef = useRef(0);
 
   const handleLogin = async (username, password) => {
     const formData = new URLSearchParams();
@@ -66,92 +67,83 @@ function App() {
   const handleLogout = () => {
     resetChat();
     localStorage.removeItem('token');
-    localStorage.removeItem('chatId'); // 👈 ВАЖНО!
+    localStorage.removeItem('chatId');
     setUser(null);
-    setChatId(null); // если хранишь в состоянии
-    setMessages([]); // 💥 очищаем историю сообщений
+    setChatId(null);
+    setMessages([]);
+    setActivePage("chat");
   };
 
   const resetChat = () => {
-    setMessages([]); // Очистить все старые сообщения
+    setMessages([]);
   };
-  
-  const messageIdRef = useRef(0); // Добавляем реф для генерации ID
 
-  // В компоненте App.js
-const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
-  const baseId = messageIdRef.current;
-  messageIdRef.current += 4; // Увеличиваем базовый ID
+  const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
+    const baseId = messageIdRef.current;
+    messageIdRef.current += 4;
+    const timestamp = new Date().toLocaleTimeString();
+    const uniqueKey = Date.now();
 
-  const timestamp = new Date().toLocaleTimeString();
-
-  // Генерируем уникальный ключ для сообщения
-  const uniqueKey = Date.now();
-
-  const userMessage = {
-      id: `${baseId}-${uniqueKey}-user`, // Уникальный составной ID
+    const userMessage = {
+      id: `${baseId}-${uniqueKey}-user`,
       type: 'audio',
       content: userAudioUrl,
       sender: 'user',
       timestamp,
-  };
+    };
 
-  const loadingMessage = {
+    const loadingMessage = {
       id: `${baseId}-${uniqueKey}-loading`,
       type: 'loading',
       content: 'Бот генерирует ответ...',
       sender: 'bot',
       timestamp,
-  };
+    };
 
-  setMessages((prev) => [...prev, userMessage, loadingMessage]);
+    setMessages((prev) => [...prev, userMessage, loadingMessage]);
 
-  serverAudioUrlPromise.then(({ serverAudioUrl, userTranscript, modelTranscript }) => {
+    serverAudioUrlPromise.then(({ serverAudioUrl, userTranscript, modelTranscript }) => {
       const responseTime = new Date().toLocaleTimeString();
 
       const botMessageAudio = {
-          id: loadingMessage.id, // Используем ID loading сообщения
-          type: 'audio',
-          content: `${serverAudioUrl}?t=${Date.now()}`, // Добавляем timestamp к URL
-          sender: 'bot',
-          timestamp: responseTime,
+        id: loadingMessage.id,
+        type: 'audio',
+        content: `${serverAudioUrl}?t=${Date.now()}`,
+        sender: 'bot',
+        timestamp: responseTime,
       };
 
-      // Остальные сообщения
       const userTranscriptMessage = {
-          id: `${baseId}-${uniqueKey}-user-transcript`,
-          type: 'text',
-          content: `Ты: ${userTranscript}`,
-          sender: 'bot',
-          timestamp: responseTime,
+        id: `${baseId}-${uniqueKey}-user-transcript`,
+        type: 'text',
+        content: `Ты: ${userTranscript}`,
+        sender: 'bot',
+        timestamp: responseTime,
       };
 
       const modelTranscriptMessage = {
-          id: `${baseId}-${uniqueKey}-model-transcript`,
-          type: 'text',
-          content: `ИИ: ${modelTranscript}`,
-          sender: 'bot',
-          timestamp: responseTime,
+        id: `${baseId}-${uniqueKey}-model-transcript`,
+        type: 'text',
+        content: `ИИ: ${modelTranscript}`,
+        sender: 'bot',
+        timestamp: responseTime,
       };
 
       setMessages((prev) => [
-          ...prev.filter(msg => msg.id !== loadingMessage.id),
-          botMessageAudio,
-          userTranscriptMessage,
-          modelTranscriptMessage
+        ...prev.filter(msg => msg.id !== loadingMessage.id),
+        botMessageAudio,
+        userTranscriptMessage,
+        modelTranscriptMessage
       ]);
-  }).catch(error => {
+    }).catch(error => {
       console.error('Ошибка:', error);
-      // Удаляем loading сообщение при ошибке
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id));
-  });
-};
-  
-  
-  
+    });
+  };
+
   const handleCreateChat = async () => {
     const token = localStorage.getItem("token");
-  
+
     try {
       const response = await fetch("http://localhost:8000/api/create-chat", {
         method: "POST",
@@ -159,13 +151,13 @@ const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
           "Authorization": `Bearer ${token}`,
         },
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         setChatId(data.chat_id);
-        localStorage.setItem('chatId', data.chat_id); // 👈 добавь это
-        alert("Чат создан успешно!");
+        localStorage.setItem('chatId', data.chat_id);
+        setActivePage("chat");
       } else {
         alert("Ошибка: " + data.detail);
       }
@@ -173,12 +165,7 @@ const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
       console.error("Ошибка при создании чата:", error);
     }
   };
-  
-  
-// Функция для возвращения в чат
-const handleReturnToChat = () => {
-  setWordPageVisible(false);
-};
+
   return (
     <div className="chat-app">
       <div className="chat-header">
@@ -189,7 +176,9 @@ const handleReturnToChat = () => {
             <>
               <span>Привет, {user.username}!</span>
               <button onClick={handleLogout}>Выйти</button>
-              <button onClick={() => setWordPageVisible(!isWordPageVisible)}>Слова</button>
+              <button onClick={() => setActivePage("words")}>Слова</button>
+              <button onClick={() => setActivePage("podcast")}>🎧 Подкаст</button>
+              <button onClick={handleCreateChat}>Начать чат</button>
             </>
           ) : (
             <>
@@ -202,39 +191,37 @@ const handleReturnToChat = () => {
 
       {isLoginFormVisible && <LoginForm onSubmit={handleLogin} />}
       {isRegisterFormVisible && <RegisterForm onSubmit={handleRegister} />}
-      
 
+      {user && activePage === "podcast" && (
+        <PodcastPage onReturnToChat={() => setActivePage("chat")} />
+      )}
 
-      {/* Если пользователь вошёл и не выбрал "Слова" — показать чат */}
-      {user && !isWordPageVisible && (
-  <>
-        {!chatId ? (
-          <div style={{ textAlign: "center", marginTop: "1rem" }}>
-            <button onClick={handleCreateChat}>Начать чат</button>
-          </div>
-        ) : (
-          <>
-          
-            <div className="chat-messages">
-              {messages.map((message) => (
-                <Message key={message.id} message={message} />
-              ))}
-            </div>
+      {user && activePage === "words" && (
+        <WordGuessPage onReturnToChat={() => setActivePage("chat")} />
+      )}
 
-            <div className="chat-input">
-            <AudioRecorder onNewAudio={handleNewAudio} chatId={chatId} />
-            <AnalysisModal />
+      {user && activePage === "chat" && (
+        <>
+          {!chatId ? (
+            <div style={{ textAlign: "center", marginTop: "1rem" }}></div>
+          ) : (
+            <>
+              <div className="chat-messages">
+                {messages.map((message) => (
+                  <Message key={message.id} message={message} />
+                ))}
+              </div>
 
-            </div>
-          </>
-        )}
-      </>
-    )}
-
-
-      {/* Если выбрана страница "Слова" */}
-      {user && isWordPageVisible && <WordGuessPage onReturnToChat={handleReturnToChat} />}
+              <div className="chat-input">
+                <AudioRecorder onNewAudio={handleNewAudio} chatId={chatId} />
+                <AnalysisModal />
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
+
 export default App;

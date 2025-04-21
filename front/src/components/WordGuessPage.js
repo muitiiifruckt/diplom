@@ -61,8 +61,7 @@ function WordGuessPage({ onReturnToChat }) {
       <button onClick={handleSubmit}>Проверить</button>
       <button onClick={fetchWord}>Следующее слово</button>
 
-      {/* Кнопка для возвращения в чат */}
-      <button onClick={onReturnToChat}>Вернуться в чат</button>
+    
 
       {result && <p className="result">{result}</p>}
     </div>
