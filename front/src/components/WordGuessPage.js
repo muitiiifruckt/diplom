@@ -46,13 +46,13 @@ function WordGuessPage({ onReturnToChat }) {
 
   const fetchExamples = () => {
     setLoadingExamples(true);
-    fetch('http://localhost:8000/examples', {
+    fetch('http://localhost:8000/word-info', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify({ word })
+      body: JSON.stringify({ word:word })
     })
       .then(res => res.json())
       .then(data => {

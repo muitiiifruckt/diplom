@@ -169,7 +169,7 @@ function App() {
   return (
     <div className="chat-app">
       <div className="chat-header">
-        <h1>Голосовой чат</h1>
+        <h1>Simple Talk</h1>
 
         <div className="auth-buttons">
           {user ? (

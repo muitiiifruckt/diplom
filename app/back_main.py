@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine,get_db
 from models import User, Base, Word, Chat, ChatMessagePair, Podcast
-from schemas import UserCreate
+from schemas import UserCreate, WordRequest
 from crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from req_gemma import request_gemma2
@@ -229,7 +229,7 @@ def analyze_user_transcripts(
         "analysis_result": analysis
     }
     
-@app.post("/examples")
+@app.post("/get")
 def check_translation(data: dict):
     word = data.get("word")
     if not word:
@@ -237,4 +237,18 @@ def check_translation(data: dict):
     examples = request_gemma2(f"write only three examples with word '{word}',only examples ")
     return {
         "examples": examples,
+    }
+@app.post("/word-info")
+def get_word_info(data: WordRequest):
+    word = data.word
+    if not word:
+        return {"error": "Word is empty"}
+
+    examples = request_gemma2(f"write only three examples with word '{word}',only examples ")
+    translation = request_gemma2(f"Translate '{word}' to Russian, return only Translate")
+
+    return {
+        "word": word,
+        "translation": translation,
+        "examples": examples
     }
