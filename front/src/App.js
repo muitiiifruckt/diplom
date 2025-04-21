@@ -174,7 +174,7 @@ function App() {
         <div className="auth-buttons">
           {user ? (
             <>
-              <span>Привет, {user.username}!</span>
+              <span>{user.username}</span>
               <button onClick={handleLogout}>Выйти</button>
               <button onClick={() => setActivePage("words")}>Слова</button>
               <button onClick={() => setActivePage("podcast")}>🎧 Подкаст</button>

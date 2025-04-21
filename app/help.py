@@ -4,7 +4,7 @@ import json
 import wave
 def recognize_speech(model_path="vosk-model-small-en-us-0.15", sample_rate=16000):
     # Инициализация модели и распознавателя
-    model = Model("vosk-model-small-en-us-0.15")
+    model = Model(model_path)
     recognizer = KaldiRecognizer(model, sample_rate)
 
     # Инициализация микрофона
@@ -24,7 +24,7 @@ def recognize_speech(model_path="vosk-model-small-en-us-0.15", sample_rate=16000
         
 def recognize_speech_from_wav(wav_path, model_path="vosk-model-small-en-us-0.15"):
     # Инициализация модели
-    model = Model("vosk-model-small-en-us-0.15")
+    model = Model(model_path)
     
     # Открытие WAV-файла
     with wave.open(wav_path, "rb") as wf:
@@ -45,4 +45,4 @@ def recognize_speech_from_wav(wav_path, model_path="vosk-model-small-en-us-0.15"
         result = json.loads(recognizer.FinalResult())
         return result.get("text", "")
 if __name__ ==("__main__"):
-    print(recognize_speech_from_wav(r"recording.wav"))
+    print(recognize_speech(model_path="vosk-model-en-us-0.22"))

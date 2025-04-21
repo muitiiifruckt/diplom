@@ -14,6 +14,7 @@ from crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from req_gemma import request_gemma2
 from fastapi import Form
+from dowload_podcasts import clean_podcast_text
 import random 
 
 logging.basicConfig(level=logging.INFO)
@@ -69,12 +70,12 @@ def get_random_podcast(db: Session = Depends(get_db)):
     file_path = f"send/podcast_{podcast.id}.mp3"
     with open(file_path, "wb") as f:
         f.write(podcast.audio)
-
+    podcast_text = clean_podcast_text(podcast.transcript)
     return {
         "status": "success",
         "download_url": f"/static/podcast_{podcast.id}.mp3",
         "title": podcast.title,
-        "transcript": podcast.transcript,
+        "transcript": podcast_text,
         "message": "Случайный подкаст успешно загружен"
     }
 
@@ -154,7 +155,7 @@ def check_translation(data: dict, db: Session = Depends(get_db)):
     word_text = data.get("word")
     user_translation = data.get("user_translation")
 
-    if not word_text or not user_translation:
+    if not word_text:
         raise HTTPException(status_code=400, detail="Неверный формат запроса")
 
     word_entry = db.query(Word).filter(Word.word == word_text).first()
@@ -226,4 +227,14 @@ def analyze_user_transcripts(
     return {
         "prompt_sent": prompt,
         "analysis_result": analysis
+    }
+    
+@app.post("/examples")
+def check_translation(data: dict):
+    word = data.get("word")
+    if not word:
+        raise HTTPException(status_code=400, detail="Неверный формат запроса")
+    examples = request_gemma2(f"write only three examples with word '{word}',only examples ")
+    return {
+        "examples": examples,
     }

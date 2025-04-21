@@ -4,8 +4,10 @@ function WordGuessPage({ onReturnToChat }) {
   const [word, setWord] = useState('');
   const [userTranslation, setUserTranslation] = useState('');
   const [result, setResult] = useState(null);
+  const [examples, setExamples] = useState([]);
+  const [showExamples, setShowExamples] = useState(false);
+  const [loadingExamples, setLoadingExamples] = useState(false);
 
-  // Оборачиваем fetchWord в useCallback, чтобы useEffect не ругался
   const fetchWord = useCallback(() => {
     fetch('http://localhost:8000/get-random-word', {
       headers: {
@@ -17,6 +19,8 @@ function WordGuessPage({ onReturnToChat }) {
         setWord(data.word);
         setUserTranslation('');
         setResult(null);
+        setExamples([]);
+        setShowExamples(false);
       })
       .catch(err => console.error('Ошибка при получении слова:', err));
   }, []);
@@ -40,6 +44,28 @@ function WordGuessPage({ onReturnToChat }) {
       .catch(err => console.error('Ошибка при проверке перевода:', err));
   };
 
+  const fetchExamples = () => {
+    setLoadingExamples(true);
+    fetch('http://localhost:8000/examples', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ word })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setExamples(data.examples.split('\n').filter(Boolean)); // Разделение по строкам
+        setShowExamples(true);
+        setLoadingExamples(false);
+      })
+      .catch(err => {
+        console.error('Ошибка при получении примеров:', err);
+        setLoadingExamples(false);
+      });
+  };
+
   useEffect(() => {
     fetchWord();
   }, [fetchWord]);
@@ -60,10 +86,22 @@ function WordGuessPage({ onReturnToChat }) {
       />
       <button onClick={handleSubmit}>Проверить</button>
       <button onClick={fetchWord}>Следующее слово</button>
-
-    
+      <button onClick={fetchExamples} disabled={loadingExamples}>
+        {loadingExamples ? 'Загрузка...' : 'Показать примеры'}
+      </button>
 
       {result && <p className="result">{result}</p>}
+
+      {showExamples && examples.length > 0 && (
+        <div className="examples-section">
+          <h4>Примеры использования:</h4>
+          <ul>
+            {examples.map((ex, idx) => (
+              <li key={idx}>{ex}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

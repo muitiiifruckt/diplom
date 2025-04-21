@@ -138,7 +138,28 @@ def main():
                 
     finally:
         db.close()
+import re
+
+def clean_podcast_text(raw_text: str) -> str:
+    # Удаление ссылок (http, https, www)
+    text = re.sub(r'https?://\S+|www\.\S+', '', raw_text)
+    
+    # Удаление email-адресов
+    text = re.sub(r'\S+@\S+', '', text)
+
+    # Замена двух и более табов на один пробел
+    text = re.sub(r'\t{2,}', ' ', text)
+
+    # Замена всех одинарных табов на пробел
+    text = text.replace('\t', ' ')
+
+    # Удаление лишних пустых строк
+    lines = text.splitlines()
+    cleaned_lines = [line.strip() for line in lines if line.strip()]
+    
+    return '\n'.join(cleaned_lines)
 
 
 if __name__ == "__main__":
-    main()
+    #main()
+    print(clean_podcast_text())

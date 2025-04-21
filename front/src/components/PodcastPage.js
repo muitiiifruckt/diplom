@@ -14,7 +14,6 @@ function PodcastPage({ onReturnToChat }) {
 
   return (
     <div style={{ padding: "1rem" }}>
-    <button onClick={onReturnToChat}>⬅ Назад в чат</button>
       <h2>{podcast.title}</h2>
       <audio controls src={`http://localhost:8000${podcast.download_url}`} style={{ width: "100%" }} />
       <p style={{ marginTop: "1rem", whiteSpace: "pre-line" }}>{podcast.transcript}</p>
