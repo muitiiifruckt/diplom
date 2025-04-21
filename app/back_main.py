@@ -8,7 +8,7 @@ import logging
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine,get_db
-from models import User, Base, Word, Chat, ChatMessagePair
+from models import User, Base, Word, Chat, ChatMessagePair, Podcast
 from schemas import UserCreate
 from crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
@@ -56,6 +56,27 @@ def save_message_pair_to_db(
     db.add(message_pair)
     db.commit()
 
+
+@app.get("/api/random-podcast")
+def get_random_podcast(db: Session = Depends(get_db)):
+    podcasts = db.query(Podcast).all()
+    if not podcasts:
+        raise HTTPException(status_code=404, detail="Нет доступных подкастов")
+    
+    podcast = random.choice(podcasts)
+
+    # Сохраняем аудио временно, чтобы дать ссылку на файл
+    file_path = f"send/podcast_{podcast.id}.mp3"
+    with open(file_path, "wb") as f:
+        f.write(podcast.audio)
+
+    return {
+        "status": "success",
+        "download_url": f"/static/podcast_{podcast.id}.mp3",
+        "title": podcast.title,
+        "transcript": podcast.transcript,
+        "message": "Случайный подкаст успешно загружен"
+    }
 
 @app.post("/api/upload-audio")
 async def upload_audio(

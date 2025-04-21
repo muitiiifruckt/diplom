@@ -43,5 +43,14 @@ class Word(Base):
     id = Column(Integer, primary_key=True)
     word = Column(String, unique=True, index=True)
     translation = Column(String)
+    
+class Podcast(Base):
+    __tablename__ = "podcasts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)  # Название подкаста
+    audio = Column(LargeBinary, nullable=False)  # mp3-файл
+    transcript = Column(Text, nullable=True)  # Текст подкаста
+    uploaded_at = Column(DateTime, default=datetime.utcnow)  # Дата загрузки
 
 Base.metadata.create_all(bind=engine)
