@@ -32,3 +32,5 @@ def request_gemma2(request_text = "lol kek"):
             print(f"Error decoding JSON: {e}")
     else:
         print(f"Error: {response.status_code}, {response.text}")
+if __name__ ==("__main__"):
+    print(request_gemma2("create a prompt to generate a photo so that a person can guess the word from its picture, return only the prompt itself in response, the maximum response size is 77 tokens. word - cheese"))

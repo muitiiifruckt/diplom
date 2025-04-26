@@ -11,7 +11,31 @@ function WordGuessPage({ onReturnToChat }) {
   const [selectedWord, setSelectedWord] = useState(null);
   const [wordInfo, setWordInfo] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
+  const [loadingImage, setLoadingImage] = useState(false);
+  
 
+  const handleGenerateImage = () => {
+    setLoadingImage(true);
+    fetch('http://localhost:8000/gen_imege', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ word })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setGeneratedImageUrl(`http://localhost:8000${data.download_url}?t=${Date.now()}`);
+        setLoadingImage(false);
+      })
+      .catch(err => {
+        console.error('Ошибка при генерации изображения:', err);
+        setLoadingImage(false);
+      });
+  };
+  
   const fetchWord = useCallback(() => {
     fetch('http://localhost:8000/get-random-word', {
       headers: {
@@ -114,6 +138,10 @@ function WordGuessPage({ onReturnToChat }) {
       <button onClick={fetchExamples} disabled={loadingExamples}>
         {loadingExamples ? 'Загрузка...' : 'Показать примеры'}
       </button>
+      <button onClick={handleGenerateImage} disabled={loadingImage}>
+      {loadingImage ? 'Генерация...' : 'Сгенерировать фото'}
+       </button>
+
 
       {result && <p className="result">{result}</p>}
 
@@ -152,6 +180,13 @@ function WordGuessPage({ onReturnToChat }) {
     </div>
   </div>
 )}
+{generatedImageUrl && (
+  <div className="generated-image-section">
+    <h4>Угадай слово по картинке:</h4>
+    <img src={generatedImageUrl} alt="Generated" style={{ maxWidth: '100%', height: 'auto', marginTop: '10px' }} />
+  </div>
+)}
+
 
     </div>
   );

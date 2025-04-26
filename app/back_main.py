@@ -13,6 +13,7 @@ from schemas import UserCreate, WordRequest
 from crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from req_gemma import request_gemma2
+from image_generator import gen_photo
 from fastapi import Form
 from dowload_podcasts import clean_podcast_text
 import random 
@@ -237,6 +238,18 @@ def check_translation(data: dict):
     examples = request_gemma2(f"write only three examples with word '{word}',only examples ")
     return {
         "examples": examples,
+    }
+    
+@app.post("/gen_imege")
+def gen_imege(data: WordRequest):
+    word = data.word
+    if not word:
+        raise HTTPException(status_code=400, detail="Неверный формат запроса")
+    promt_to_image_gen = request_gemma2(f"create a prompt to generate a photo so that a person can guess the word from its picture, return only the prompt itself in response, the maximum response size is 77 tokens. word - {word}")
+    gen_photo(promt_to_image_gen)
+    return {
+        "status": "success",
+        "download_url": "/static/image.png",
     }
 @app.post("/word-info")
 def get_word_info(data: WordRequest):
