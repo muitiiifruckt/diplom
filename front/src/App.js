@@ -77,7 +77,30 @@ function App() {
   const resetChat = () => {
     setMessages([]);
   };
-
+  
+  const handleNewTextMessage = (textPromise) => {
+    // Логика обработки текстовых сообщений
+    textPromise.then(({ user_message, model_message }) => {
+      const timestamp = new Date().toLocaleTimeString();
+      const userMessage = {
+        id: `${messageIdRef.current}-user`,
+        type: 'text',
+        content: `Ты: ${user_message}`,
+        sender: 'user',
+        timestamp,
+      };
+      const modelMessage = {
+        id: `${messageIdRef.current}-model`,
+        type: 'text',
+        content: `ИИ: ${model_message}`,
+        sender: 'bot',
+        timestamp,
+      };
+      setMessages((prev) => [...prev, userMessage, modelMessage]);
+    }).catch(error => {
+      console.error('Ошибка получения текста:', error);
+    });
+  };
   const handleNewAudio = (userAudioUrl, serverAudioUrlPromise) => {
     const baseId = messageIdRef.current;
     messageIdRef.current += 4;
@@ -213,9 +236,13 @@ function App() {
               </div>
 
               <div className="chat-input">
-                <AudioRecorder onNewAudio={handleNewAudio} chatId={chatId} />
-                <AnalysisModal />
-              </div>
+            <AudioRecorder 
+              onNewAudio={handleNewAudio} 
+              onNewTextMessage={handleNewTextMessage} // Добавляем передачу onNewTextMessage
+              chatId={chatId} 
+            />
+            <AnalysisModal />
+          </div>
             </>
           )}
         </>

@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { encode } from 'wav-encoder';
 
-
 const convertToWav = async (audioBuffer) => {
   const wavBuffer = await encode({
     sampleRate: audioBuffer.sampleRate,
@@ -10,9 +9,9 @@ const convertToWav = async (audioBuffer) => {
   return new Blob([wavBuffer], { type: 'audio/wav' });
 };
 
-
-const AudioRecorder = ({ onNewAudio }) => {
+const AudioRecorder = ({ onNewAudio, onNewTextMessage }) => {
   const [isRecording, setIsRecording] = useState(false);
+  const [textInput, setTextInput] = useState('');
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
@@ -20,11 +19,9 @@ const AudioRecorder = ({ onNewAudio }) => {
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.wav');
-      console.log( localStorage.getItem('chatId'))
-      console.log("sdfsdfsd")
-      formData.append('chat_id', localStorage.getItem('chatId')); // Или из пропсов / состояния, если есть
+      formData.append('chat_id', localStorage.getItem('chatId'));
   
-      const token = localStorage.getItem('token'); // не забудь про авторизацию
+      const token = localStorage.getItem('token');
   
       const response = await fetch('http://localhost:8000/api/upload-audio', {
         method: 'POST',
@@ -42,13 +39,38 @@ const AudioRecorder = ({ onNewAudio }) => {
   
       return { serverAudioUrl, userTranscript, modelTranscript };
     } catch (error) {
-      console.error('Ошибка отправки:', error);
+      console.error('Ошибка отправки аудио:', error);
       return null;
     }
   };
+
+  const sendTextToServer = async (text) => {
+    try {
+      const formData = new FormData();
+      formData.append('message', text);
+      formData.append('chat_id', localStorage.getItem('chatId'));
   
+      const token = localStorage.getItem('token');
   
+      const response = await fetch('http://localhost:8000/api/get_answer', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData
+      });
   
+      const result = await response.json();
+  
+      return {
+        user_message: result.user_message,
+        model_message: result.model_message,
+      };
+    } catch (error) {
+      console.error('Ошибка отправки текста:', error);
+      return null;
+    }
+  };
 
   const startRecording = async () => {
     try {
@@ -72,19 +94,15 @@ const AudioRecorder = ({ onNewAudio }) => {
           const wavBlob = await convertToWav(audioBuffer);
           const userAudioUrl = URL.createObjectURL(wavBlob);
       
-          // Создаем промис для получения ответа с сервера
           const serverAudioUrlPromise = sendAudioToServer(wavBlob);
-      
-          // Передаем данные, включая новый userAudioUrl и серверный промис
           onNewAudio(userAudioUrl, serverAudioUrlPromise);  
       
         } catch (error) {
           console.error('Ошибка обработки аудио:', error);
         } finally {
-          audioChunksRef.current = []; // Очищаем данные записи
+          audioChunksRef.current = [];
         }
       };
-      
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
@@ -101,17 +119,43 @@ const AudioRecorder = ({ onNewAudio }) => {
     }
   };
 
+  const handleTextSubmit = async (e) => {
+    e.preventDefault();
+    if (!textInput.trim()) return;
+
+    const textPromise = sendTextToServer(textInput);
+    textPromise._text = textInput; // сохраняем исходный текст
+    onNewTextMessage(textPromise);
+
+    setTextInput('');
+  };
+
   return (
     <div className="audio-recorder">
-      {isRecording ? (
-        <button className="stop-button" onClick={stopRecording}>
-          Остановить запись
+      <div style={{ marginBottom: '10px' }}>
+        {isRecording ? (
+          <button className="stop-button" onClick={stopRecording}>
+            Остановить запись
+          </button>
+        ) : (
+          <button className="start-button" onClick={startRecording}>
+            Записать голосовое сообщение
+          </button>
+        )}
+      </div>
+
+      <form onSubmit={handleTextSubmit} style={{ display: 'flex', gap: '8px' }}>
+        <input
+          type="text"
+          value={textInput}
+          onChange={(e) => setTextInput(e.target.value)}
+          placeholder="Введите сообщение..."
+          className="text-input"
+        />
+        <button type="submit" className="send-button">
+          Отправить
         </button>
-      ) : (
-        <button className="start-button" onClick={startRecording}>
-          Записать голосовое сообщение
-        </button>
-      )}
+      </form>
     </div>
   );
 };

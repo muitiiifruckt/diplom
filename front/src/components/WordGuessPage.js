@@ -198,11 +198,6 @@ function WordGuessPage({ onReturnToChat }) {
     />
   </div>
 )}
-
-
-
-
-
     </div>
   );
 }

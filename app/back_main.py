@@ -121,6 +121,31 @@ async def upload_audio(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/get_answer")
+async def upload_audio(
+    message: str = Form(...),  # Убедись, что здесь Form
+    chat_id: int = Form(...),  # Также используем Form для chat_id
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    try:
+        model_text = request_gemma2(message + "   give small answer")
+        save_message_pair_to_db(
+            db=db,
+            chat_id=chat_id,
+            user_audio=None,
+            user_transcript=message,
+            bot_audio=None,
+            bot_transcript=model_text
+        )
+        print("answer", model_text)
+        return {
+            "status": "success",
+            "user_message": message,
+            "model_message": model_text,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
