@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import WordHighlighter from "./WordHighlighter";
 
 function WordGuessPage({ onReturnToChat }) {
@@ -36,22 +36,28 @@ function WordGuessPage({ onReturnToChat }) {
       });
   };
   
-  const fetchWord = useCallback(() => {
-    fetch('http://localhost:8000/get-random-word', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setWord(data.word);
-        setUserTranslation('');
-        setResult(null);
-        setExamples([]);
-        setShowExamples(false);
+  const fetchWord = () => {
+    setGeneratedImageUrl(null);
+  
+    setTimeout(() => {
+      fetch('http://localhost:8000/get-random-word', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
       })
-      .catch(err => console.error('Ошибка при получении слова:', err));
-  }, []);
+        .then(res => res.json())
+        .then(data => {
+          setWord(data.word);
+          setUserTranslation('');
+          setResult(null);
+          setExamples([]);
+          setShowExamples(false);
+        })
+        .catch(err => console.error('Ошибка при получении слова:', err));
+    }, 50);
+  };
+  
+  
 
   const handleSubmit = () => {
     fetch('http://localhost:8000/check-translation', {
@@ -116,7 +122,8 @@ function WordGuessPage({ onReturnToChat }) {
   
   useEffect(() => {
     fetchWord();
-  }, [fetchWord]);
+  }, []); // Тут ок — без fetchWord в deps, просто []
+  
 
   return (
     
@@ -183,9 +190,17 @@ function WordGuessPage({ onReturnToChat }) {
 {generatedImageUrl && (
   <div className="generated-image-section">
     <h4>Угадай слово по картинке:</h4>
-    <img src={generatedImageUrl} alt="Generated" style={{ maxWidth: '100%', height: 'auto', marginTop: '10px' }} />
+    <img
+      key={generatedImageUrl} // ДОБАВЛЯЕМ key !!!
+      src={generatedImageUrl}
+      alt="Generated"
+      style={{ maxWidth: '100%', height: 'auto', marginTop: '10px' }}
+    />
   </div>
 )}
+
+
+
 
 
     </div>
