@@ -7,17 +7,17 @@ import RegisterForm from './components/RegisterForm';
 import WordGuessPage from './components/WordGuessPage';
 import AnalysisModal from './components/chat_analys';
 import PodcastPage from './components/PodcastPage';
+import TestsPage from './components/TestsPage';
 
 function App() {
   const [user, setUser] = useState(null);
   const [isLoginFormVisible, setLoginFormVisible] = useState(false);
   const [isRegisterFormVisible, setRegisterFormVisible] = useState(false);
-  const [activePage, setActivePage] = useState("chat"); // "chat", "words", "podcast"
-  const [messages, setMessages] = useState([]);
   const [chatId, setChatId] = useState(null);
   const messageIdRef = useRef(0);
   const [chats, setChats] = useState([]);
-
+  const [activePage, setActivePage] = useState("chat"); // "chat", "words", "podcast", "tests"
+  const [messages, setMessages] = useState([]);
 
   const fetchChats = async () => {
     const token = localStorage.getItem("token");
@@ -275,6 +275,7 @@ function App() {
               <button onClick={() => setActivePage("words")}>Слова</button>
               <button onClick={() => setActivePage("podcast")}>🎧 Подкаст</button>
               <button onClick={handleCreateChat}>Начать чат</button>
+              <button onClick={() => setActivePage("tests")}>Тесты</button>
             </>
           ) : (
             <>
@@ -290,6 +291,9 @@ function App() {
 
       {user && activePage === "podcast" && (
         <PodcastPage onReturnToChat={() => setActivePage("chat")} />
+      )}
+      {user && activePage === "tests" && (
+        <TestsPage onReturnToChat={() => setActivePage("chat")} />
       )}
 
       {user && activePage === "words" && (

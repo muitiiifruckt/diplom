@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from app.req_gemma import request_gemma2
-
+import json
 def generate_vocabulary_test(num_words=5):
     prompt = f"""
     Create a vocabulary test with {num_words} English words.
@@ -29,7 +29,9 @@ def generate_vocabulary_test(num_words=5):
     Only return the JSON, no explanations.
     """
     response = request_gemma2(prompt)
-    return response
+    # Преобразуем ответ в Python-объект
+    data = json.loads(response)
+    return data
 
 if __name__ == "__main__":
     test = generate_vocabulary_test()

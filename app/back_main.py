@@ -1,22 +1,28 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException,Body
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from help import recognize_speech_from_wav
-from to_audio import text_to_speech
+from .help import recognize_speech_from_wav
+from .to_audio import text_to_speech
 from fastapi.staticfiles import StaticFiles
 import logging
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from database import SessionLocal, engine,get_db
-from models import User, Base, Word, Chat, ChatMessagePair, Podcast
-from schemas import UserCreate, WordRequest
-from crypto import pwd_context,create_access_token, get_current_user
+from .database import SessionLocal, engine,get_db
+from .models import User, Base, Word, Chat, ChatMessagePair, Podcast
+from .schemas import UserCreate, WordRequest
+from .crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
-from req_gemma import request_gemma2
-from image_generator import gen_photo
+from .req_gemma import request_gemma2
+from .image_generator import gen_photo
 from fastapi import Form
-from dowload_podcasts import clean_podcast_text
+from .dowload_podcasts import clean_podcast_text
 import random 
+from app.language_tests.grammar import generate_grammar_test
+from app.language_tests.vocabulary import generate_vocabulary_test
+from app.language_tests.reading import generate_reading_test
+from app.language_tests.listening import generate_listening_test
+from app.language_tests.writing import generate_writing_prompt, evaluate_writing
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -161,8 +167,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    print('form_data',form_data.username,form_data.password)
     db = next(get_db())
     user = db.query(User).filter(User.username == form_data.username).first()
+    print('user',user)
     if not user or not pwd_context.verify(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Неверные данные")
     access_token = create_access_token(data={"sub": user.username})
@@ -354,3 +362,28 @@ def get_chat_messages(
             "bot_audio_url": bot_audio_url,
         })
     return result
+
+
+@app.get("/api/tests/grammar")
+def get_grammar_test(n: int = 5):
+    return generate_grammar_test(n)
+
+@app.get("/api/tests/vocabulary")
+def get_vocabulary_test(n: int = 5):
+    return generate_vocabulary_test(n)
+
+@app.get("/api/tests/reading")
+def get_reading_test(n: int = 5, questions: int = 3):
+    return generate_reading_test(n, questions)
+
+@app.get("/api/tests/listening")
+def get_listening_test(n: int = 5):
+    return generate_listening_test(n)
+
+@app.get("/api/tests/writing/prompt")
+def get_writing_prompt():
+    return {"prompt": generate_writing_prompt()}
+
+@app.post("/api/tests/writing/evaluate")
+def post_writing_evaluate(text: str = Body(..., embed=True)):
+    return evaluate_writing(text)  

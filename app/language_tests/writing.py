@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from app.req_gemma import request_gemma2
-
+import json
 def generate_writing_prompt():
     prompt = """
     Suggest a topic for a short story or essay for an English learner. 
@@ -22,7 +22,9 @@ def evaluate_writing(user_text):
     Only return the JSON, no explanations.
     """
     response = request_gemma2(prompt)
-    return response
+    # Преобразуем ответ в Python-объект
+    data = json.loads(response)
+    return data
 
 if __name__ == "__main__":
     # 1. Получить тему
