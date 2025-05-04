@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './App.css';
 import AudioRecorder from './components/AudioRecorder';
 import Message from './components/Message';
@@ -16,7 +16,77 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [chatId, setChatId] = useState(null);
   const messageIdRef = useRef(0);
+  const [chats, setChats] = useState([]);
 
+
+  const fetchChats = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const response = await fetch("http://localhost:8000/api/my-chats", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setChats(data);
+      }
+    } catch (error) {
+      console.error("Ошибка загрузки чатов:", error);
+    }
+  };
+  const fetchMessages = async (chatId) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`http://localhost:8000/api/chat/${chatId}/messages`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Преобразуем сообщения к формату, который ожидает Message.js
+        const formatted = data.map(msg => [
+          msg.user_audio_url && {
+            id: `${msg.id}-user-audio`,
+            type: 'audio',
+            content: `http://localhost:8000${msg.user_audio_url}`,
+            sender: 'user',
+            timestamp: msg.timestamp,
+          },
+          msg.user_transcript && {
+            id: `${msg.id}-user`,
+            type: 'text',
+            content: `Ты: ${msg.user_transcript}`,
+            sender: 'user',
+            timestamp: msg.timestamp,
+          },
+          msg.bot_audio_url && {
+            id: `${msg.id}-bot-audio`,
+            type: 'audio',
+            content: `http://localhost:8000${msg.bot_audio_url}`,
+            sender: 'bot',
+            timestamp: msg.timestamp,
+          },
+          msg.bot_transcript && {
+            id: `${msg.id}-bot`,
+            type: 'text',
+            content: `ИИ: ${msg.bot_transcript}`,
+            sender: 'bot',
+            timestamp: msg.timestamp,
+          }
+        ]).flat().filter(Boolean);
+        setMessages(formatted);
+      }
+    } catch (error) {
+      console.error("Ошибка загрузки сообщений:", error);
+    }
+  };
+  useEffect(() => {
+    if (user) fetchChats();
+  }, [user]);
+  const handleSelectChat = (id) => {
+    setChatId(id);
+    localStorage.setItem('chatId', id);
+    fetchMessages(id);
+  };
   const handleLogin = async (username, password) => {
     const formData = new URLSearchParams();
     formData.append('username', username);
@@ -71,6 +141,7 @@ function App() {
     setUser(null);
     setChatId(null);
     setMessages([]);
+    setChats([]); // сбросить чаты
     setActivePage("chat");
   };
 
@@ -181,6 +252,8 @@ function App() {
         setChatId(data.chat_id);
         localStorage.setItem('chatId', data.chat_id);
         setActivePage("chat");
+        fetchChats();
+        fetchMessages(data.chat_id);
       } else {
         alert("Ошибка: " + data.detail);
       }
@@ -224,28 +297,42 @@ function App() {
       )}
 
       {user && activePage === "chat" && (
-        <>
-          {!chatId ? (
-            <div style={{ textAlign: "center", marginTop: "1rem" }}></div>
-          ) : (
-            <>
-              <div className="chat-messages">
-                {messages.map((message) => (
-                  <Message key={message.id} message={message} />
-                ))}
+        <div className="chat-layout">
+          <div className="chat-list">
+            <button onClick={handleCreateChat}>+ Новый чат</button>
+            {chats.map(chat => (
+              <div
+                key={chat.chat_id}
+                className={`chat-list-item${chatId === chat.chat_id ? ' active' : ''}`}
+                onClick={() => handleSelectChat(chat.chat_id)}
+              >
+                Чат #{chat.chat_id} <br />
+                <span style={{ fontSize: '0.8em', color: '#888' }}>{new Date(chat.created_at).toLocaleString()}</span>
               </div>
-
-              <div className="chat-input">
-            <AudioRecorder 
-              onNewAudio={handleNewAudio} 
-              onNewTextMessage={handleNewTextMessage} // Добавляем передачу onNewTextMessage
-              chatId={chatId} 
-            />
-            <AnalysisModal />
+            ))}
           </div>
-            </>
-          )}
-        </>
+          <div className="chat-main">
+            {!chatId ? (
+              <div style={{ textAlign: "center", marginTop: "1rem" }}>Выберите чат или создайте новый</div>
+            ) : (
+              <>
+                <div className="chat-messages">
+                  {messages.map((message) => (
+                    <Message key={message.id} message={message} />
+                  ))}
+                </div>
+                <div className="chat-input">
+                  <AudioRecorder 
+                    onNewAudio={handleNewAudio} 
+                    onNewTextMessage={handleNewTextMessage}
+                    chatId={chatId} 
+                  />
+                  <AnalysisModal />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

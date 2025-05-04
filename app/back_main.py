@@ -210,7 +210,7 @@ async def create_chat(db: Session = Depends(get_db), user: User = Depends(get_cu
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.get("/api/analyze-user-transcripts")
+@app.post("/api/analyze-user-transcripts")
 def analyze_user_transcripts(
     db: Session = Depends(get_db),
     user=Depends(get_current_user)
@@ -290,3 +290,67 @@ def get_word_info(data: WordRequest):
         "translation": translation,
         "examples": examples
     }
+@app.get("/api/my-chats")
+def get_my_chats(
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    chats = (
+        db.query(Chat)
+        .filter(Chat.user_id == user.id)
+        .order_by(Chat.created_at.desc())
+        .all()
+    )
+    # Можно вернуть только нужные поля
+    return [
+        {
+            "chat_id": chat.id,
+            "created_at": chat.created_at.isoformat()
+        }
+        for chat in chats
+    ]
+@app.get("/api/chat/{chat_id}/messages")
+def get_chat_messages(
+    chat_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    chat = db.query(Chat).filter(Chat.id == chat_id, Chat.user_id == user.id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail="Чат не найден или не принадлежит пользователю")
+
+    messages = (
+        db.query(ChatMessagePair)
+        .filter(ChatMessagePair.chat_id == chat_id)
+        .order_by(ChatMessagePair.timestamp.asc())
+        .all()
+    )
+
+    result = []
+    for msg in messages:
+        user_audio_url = None
+        bot_audio_url = None
+
+        # Сохраняем аудио пользователя, если есть
+        if msg.user_audio:
+            user_audio_path = f"send/user_audio_{msg.id}.wav"
+            with open(user_audio_path, "wb") as f:
+                f.write(msg.user_audio)
+            user_audio_url = f"/static/user_audio_{msg.id}.wav"
+
+        # Сохраняем аудио бота, если есть
+        if msg.bot_audio:
+            bot_audio_path = f"send/bot_audio_{msg.id}.wav"
+            with open(bot_audio_path, "wb") as f:
+                f.write(msg.bot_audio)
+            bot_audio_url = f"/static/bot_audio_{msg.id}.wav"
+
+        result.append({
+            "id": msg.id,
+            "user_transcript": msg.user_transcript,
+            "bot_transcript": msg.bot_transcript,
+            "timestamp": msg.timestamp.isoformat() if msg.timestamp else None,
+            "user_audio_url": user_audio_url,
+            "bot_audio_url": bot_audio_url,
+        })
+    return result
