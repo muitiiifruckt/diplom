@@ -22,6 +22,7 @@ from app.language_tests.vocabulary import generate_vocabulary_test
 from app.language_tests.reading import generate_reading_test
 from app.language_tests.listening import generate_listening_test
 from app.language_tests.writing import generate_writing_prompt, evaluate_writing
+from app.language_tests.level_test import generate_level_test, evaluate_level_test
 
 
 logging.basicConfig(level=logging.INFO)
@@ -387,3 +388,11 @@ def get_writing_prompt():
 @app.post("/api/tests/writing/evaluate")
 def post_writing_evaluate(text: str = Body(..., embed=True)):
     return evaluate_writing(text)  
+
+@app.get("/api/tests/level")
+def get_level_test():
+    return generate_level_test()
+
+@app.post("/api/tests/level/evaluate")
+def post_level_evaluate(answers: dict = Body(...)):
+    return evaluate_level_test(answers)

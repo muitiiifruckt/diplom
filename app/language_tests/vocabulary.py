@@ -29,6 +29,7 @@ def generate_vocabulary_test(num_words=5):
     Only return the JSON, no explanations.
     """
     response = request_gemma2(prompt)
+    print('response',response)
     # Преобразуем ответ в Python-объект
     data = json.loads(response)
     return data

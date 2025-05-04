@@ -22,6 +22,7 @@ def evaluate_writing(user_text):
     Only return the JSON, no explanations.
     """
     response = request_gemma2(prompt)
+    print('response',response)
     # Преобразуем ответ в Python-объект
     data = json.loads(response)
     return data

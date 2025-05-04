@@ -4,6 +4,7 @@ import VocabularyTest from './tests/VocabularyTest';
 import ReadingTest from './tests/ReadingTest';
 import ListeningTest from './tests/ListeningTest';
 import WritingTest from './tests/WritingTest';
+import LevelTest from './tests/LevelTest';
 
 const testTypes = [
   { key: 'grammar', label: 'Грамматика' },
@@ -11,6 +12,7 @@ const testTypes = [
   { key: 'reading', label: 'Чтение' },
   { key: 'listening', label: 'Аудирование' },
   { key: 'writing', label: 'Письмо' },
+  { key: 'level', label: 'Комплексный тест' },
 ];
 
 export default function TestsPage({ onReturnToChat }) {
@@ -18,7 +20,6 @@ export default function TestsPage({ onReturnToChat }) {
 
   return (
     <div>
-      <button onClick={onReturnToChat}>← Назад к чату</button>
       <h2>Тесты</h2>
       {!selectedTest ? (
         <div>
@@ -37,6 +38,7 @@ export default function TestsPage({ onReturnToChat }) {
           {selectedTest === 'reading' && <ReadingTest />}
           {selectedTest === 'listening' && <ListeningTest />}
           {selectedTest === 'writing' && <WritingTest />}
+          {selectedTest === 'level' && <LevelTest />}
         </div>
       )}
     </div>

@@ -30,6 +30,7 @@ def generate_grammar_test(num_sentences=5):
     Only return the JSON, no explanations.
     """
     response = request_gemma2(prompt)
+    print('response',response)
     # Преобразуем ответ в Python-объект
     data = json.loads(response) 
     return data 
