@@ -1,21 +1,21 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException,Body
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from .help import recognize_speech_from_wav
-from .to_audio import text_to_speech
+from app.audio_text_modul.audio_to_text import recognize_speech_from_wav
+from app.audio_text_modul.text_to_audio import text_to_speech
 from fastapi.staticfiles import StaticFiles
 import logging
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from .database import SessionLocal, engine,get_db
-from .models import User, Base, Word, Chat, ChatMessagePair, Podcast
-from .schemas import UserCreate, WordRequest
-from .crypto import pwd_context,create_access_token, get_current_user
+from app.database_work.database import SessionLocal, engine,get_db
+from .database_work.models import User, Base, Word, Chat, ChatMessagePair, Podcast
+from .database_work.schemas import UserCreate, WordRequest
+from .database_work.crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
-from .req_gemma import request_gemma2
-from .image_generator import gen_photo
+from .ai_modul.req_gemma import request_gemma2
+from .ai_modul.image_generator import gen_photo
 from fastapi import Form
-from .dowload_podcasts import clean_podcast_text
+from .fill_database.dowload_podcasts import clean_podcast_text
 import random 
 from app.language_tests.grammar import generate_grammar_test
 from app.language_tests.vocabulary import generate_vocabulary_test
@@ -219,7 +219,7 @@ async def create_chat(db: Session = Depends(get_db), user: User = Depends(get_cu
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.post("/api/analyze-user-transcripts")
+@app.get("/api/analyze-user-transcripts")
 def analyze_user_transcripts(
     db: Session = Depends(get_db),
     user=Depends(get_current_user)

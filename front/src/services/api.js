@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000';
+export const API_BASE_URL = 'http://localhost:8000';
 
 export const authService = {
   login: async (username, password) => {
@@ -59,5 +59,86 @@ export const chatService = {
       headers: { "Authorization": `Bearer ${token}` }
     });
     return response.json();
+  },
+  uploadAudio: async (audioBlob, chatId, token) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.wav');
+    formData.append('chat_id', chatId);
+    const response = await fetch(`${API_BASE_URL}/api/upload-audio`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+    return response.json();
   }
 };
+export const podcastService = {
+    fetchRandomPodcast: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/random-podcast`);
+      return response.json();
+    },
+    fetchWordInfo: async (word, token) => {
+      const response = await fetch(`${API_BASE_URL}/word-info`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ word })
+      });
+      return response.json();
+    }
+};
+
+export const testsService = {
+    fetchGrammarTest: async (token, n = 5) => {
+      const response = await fetch(`${API_BASE_URL}/api/tests/grammar?n=${n}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      return response.json();
+    },
+    fetchLevelTest: async (token) => {
+      const response = await fetch(`${API_BASE_URL}/api/tests/level`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      return response.json();
+    },
+    submitLevelTest: async (answers, token) => {
+      const response = await fetch(`${API_BASE_URL}/api/tests/level/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(answers)
+      });
+      let data = await response.json();
+      // Если сервер вернул строку, а не объект, попробуем распарсить
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          return { feedback: "Ошибка парсинга результата", raw: data };
+        }
+      }
+      return data;
+    },
+    fetchVocabularyTest: async (token, n = 5) => {
+      const response = await fetch(`${API_BASE_URL}/api/tests/vocabulary?n=${n}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      return response.json();
+    },
+    fetchWritingPrompt: async (token) => {
+        const response = await fetch(`${API_BASE_URL}/api/tests/writing/prompt`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        return response.json();
+      },
+      evaluateWriting: async (userText, token) => {
+        const response = await fetch(`${API_BASE_URL}/api/tests/writing/evaluate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ text: userText })
+        });
+        return response.json();
+      },
+    // ...другие методы для тестов
+  };

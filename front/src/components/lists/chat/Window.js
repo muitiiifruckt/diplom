@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { chatService } from '../../../../services/api';
 
 const ChatWindow = ({ chatId }) => {
   const [messages, setMessages] = useState([]);
@@ -8,12 +9,7 @@ const ChatWindow = ({ chatId }) => {
 
     const fetchMessages = async () => {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/chats/${chatId}/messages/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-      const data = await response.json();
+      const data = await chatService.fetchMessages(chatId, token);
       setMessages(data);
     };
 

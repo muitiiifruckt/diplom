@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { testsService } from '../../../services/api';
 
 export default function ListeningTest() {
   const [test, setTest] = useState(null);
@@ -6,8 +7,8 @@ export default function ListeningTest() {
   const [showResult, setShowResult] = useState(false);
 
   const fetchTest = async () => {
-    const resp = await fetch('http://localhost:8000/api/tests/listening?n=5');
-    const data = await resp.json();
+    const token = localStorage.getItem('token');
+    const data = await testsService.fetchListeningTest(token, 5);
     setTest(data);
     setAnswers({});
     setShowResult(false);

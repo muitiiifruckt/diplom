@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { testsService } from '../../../services/api';
 
 export default function LevelTest() {
   const [test, setTest] = useState(null);
@@ -6,8 +7,8 @@ export default function LevelTest() {
   const [result, setResult] = useState(null);
 
   const fetchTest = async () => {
-    const resp = await fetch('http://localhost:8000/api/tests/level');
-    const data = await resp.json();
+    const token = localStorage.getItem('token');
+    const data = await testsService.fetchLevelTest(token);
     setTest(data);
     setAnswers({});
     setResult(null);
@@ -32,21 +33,8 @@ export default function LevelTest() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const resp = await fetch('http://localhost:8000/api/tests/level/evaluate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(answers)
-    });
-    let data = await resp.json();
-    // Если сервер вернул строку, а не объект, попробуем распарсить
-    if (typeof data === "string") {
-      try {
-        data = JSON.parse(data);
-      } catch (e) {
-        setResult({ feedback: "Ошибка парсинга результата", raw: data });
-        return;
-      }
-    }
+    const token = localStorage.getItem('token');
+    const data = await testsService.submitLevelTest(answers, token);
     setResult(data);
   };
 

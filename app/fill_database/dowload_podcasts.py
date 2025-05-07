@@ -2,8 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from sqlalchemy.orm import Session
-from .models import Podcast
-from .database import SessionLocal
+from ..database_work.models import Podcast
+from ..database_work.database import SessionLocal
 
 
 def extract_clean_transcript(text: str) -> str:

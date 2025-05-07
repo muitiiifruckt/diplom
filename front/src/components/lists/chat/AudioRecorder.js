@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { encode } from 'wav-encoder';
+import { chatService, API_BASE_URL } from '../../../services/api';
 
 const convertToWav = async (audioBuffer) => {
   const wavBuffer = await encode({
@@ -17,26 +18,12 @@ const AudioRecorder = ({ onNewAudio, onNewTextMessage }) => {
 
   const sendAudioToServer = async (audioBlob) => {
     try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.wav');
-      formData.append('chat_id', localStorage.getItem('chatId'));
-  
+      const chatId = localStorage.getItem('chatId');
       const token = localStorage.getItem('token');
-  
-      const response = await fetch('http://localhost:8000/api/upload-audio', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData
-      });
-  
-      const result = await response.json();
-  
-      const serverAudioUrl = `http://localhost:8000${result.download_url}`;
+      const result = await chatService.uploadAudio(audioBlob, chatId, token);
+      const serverAudioUrl = `${API_BASE_URL}${result.download_url}`;
       const userTranscript = result.user_transcript;
       const modelTranscript = result.model_transcript;
-  
       return { serverAudioUrl, userTranscript, modelTranscript };
     } catch (error) {
       console.error('Ошибка отправки аудио:', error);
@@ -46,22 +33,9 @@ const AudioRecorder = ({ onNewAudio, onNewTextMessage }) => {
 
   const sendTextToServer = async (text) => {
     try {
-      const formData = new FormData();
-      formData.append('message', text);
-      formData.append('chat_id', localStorage.getItem('chatId'));
-  
+      const chatId = localStorage.getItem('chatId');
       const token = localStorage.getItem('token');
-  
-      const response = await fetch('http://localhost:8000/api/get_answer', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData
-      });
-  
-      const result = await response.json();
-  
+      const result = await chatService.sendText(text, chatId, token);
       return {
         user_message: result.user_message,
         model_message: result.model_message,
@@ -86,17 +60,17 @@ const AudioRecorder = ({ onNewAudio, onNewTextMessage }) => {
           const recordedBlob = new Blob(audioChunksRef.current, {
             type: mediaRecorderRef.current.mimeType,
           });
-      
+
           const arrayBuffer = await recordedBlob.arrayBuffer();
           const audioContext = new AudioContext();
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
+
           const wavBlob = await convertToWav(audioBuffer);
           const userAudioUrl = URL.createObjectURL(wavBlob);
-      
+
           const serverAudioUrlPromise = sendAudioToServer(wavBlob);
-          onNewAudio(userAudioUrl, serverAudioUrlPromise);  
-      
+          onNewAudio(userAudioUrl, serverAudioUrlPromise);
+
         } catch (error) {
           console.error('Ошибка обработки аудио:', error);
         } finally {

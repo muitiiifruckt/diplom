@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import WordHighlighter from "../../features/WordHighlighter";
+import { podcastService, API_BASE_URL } from "../../../services/api";
 
 function PodcastPage({ onReturnToChat }) {
   const [podcast, setPodcast] = useState(null);
@@ -8,31 +9,19 @@ function PodcastPage({ onReturnToChat }) {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/random-podcast")
-      .then((res) => res.json())
-      .then((data) => setPodcast(data))
+    podcastService.fetchRandomPodcast()
+      .then(setPodcast)
       .catch((err) => console.error("Ошибка при загрузке подкаста", err));
   }, []);
 
   const handleWordClick = (word) => {
     setSelectedWord(word);
     setShowModal(true);
-    fetch("http://localhost:8000/word-info", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      },
-      body: JSON.stringify({ word })
-    })
-      .then((res) => res.json())
-      .then((data) => setWordInfo(data))
+    const token = localStorage.getItem("token");
+    podcastService.fetchWordInfo(word, token)
+      .then(setWordInfo)
       .catch((err) => console.error("Ошибка при получении информации о слове:", err));
   };
-
-  
-  
-  
 
   const closeModal = () => {
     setShowModal(false);
@@ -47,17 +36,16 @@ function PodcastPage({ onReturnToChat }) {
       <h2>{podcast.title}</h2>
       <audio
         controls
-        src={`http://localhost:8000${podcast.download_url}`}
+        src={`${API_BASE_URL}${podcast.download_url}`}
         style={{ width: "100%" }}
       />
       <div style={{ marginTop: "1rem", lineHeight: "1.6", fontSize: "1.1em" }}>
         <WordHighlighter
-            text={podcast.transcript.replace(/\s+/g, " ").trim()}
-            selectedWord={selectedWord}
-            onWordClick={handleWordClick}
+          text={podcast.transcript.replace(/\s+/g, " ").trim()}
+          selectedWord={selectedWord}
+          onWordClick={handleWordClick}
         />
-        </div>
-
+      </div>
 
       {/* Модальное окно */}
       {showModal && wordInfo && (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { chatService } from '../../../services/api';
 
 const AnalysisModal = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -10,16 +11,9 @@ const AnalysisModal = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/api/analyze-user-transcripts", {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
+      const data = await chatService.analyzeUserTranscripts(token);
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (!data.error && !data.detail) {
         setAnalysisResult(data.analysis_result);
         setShowModal(true);
       } else {

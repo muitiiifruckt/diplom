@@ -2,7 +2,7 @@ import sys
 import os
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from app.req_gemma import request_gemma2
+from app.ai_modul.req_gemma import request_gemma2
 from app.language_tests.grammar import generate_grammar_test
 from app.language_tests.vocabulary import generate_vocabulary_test
 from app.language_tests.reading import generate_reading_test

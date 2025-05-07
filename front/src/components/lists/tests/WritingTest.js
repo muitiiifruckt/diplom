@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { testsService } from '../../../services/api';
 
 export default function WritingTest() {
   const [prompt, setPrompt] = useState('');
@@ -6,18 +7,14 @@ export default function WritingTest() {
   const [result, setResult] = useState(null);
 
   const fetchPrompt = async () => {
-    const resp = await fetch('http://localhost:8000/api/tests/writing/prompt');
-    const data = await resp.json();
+    const token = localStorage.getItem('token');
+    const data = await testsService.fetchWritingPrompt(token);
     setPrompt(data.prompt);
   };
 
   const evaluate = async () => {
-    const resp = await fetch('http://localhost:8000/api/tests/writing/evaluate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: userText }),
-    });
-    const data = await resp.json();
+    const token = localStorage.getItem('token');
+    const data = await testsService.evaluateWriting(userText, token);
     setResult(data);
   };
 

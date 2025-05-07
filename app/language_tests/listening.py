@@ -2,8 +2,8 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from app.req_gemma import request_gemma2
-from app.to_audio import text_to_speech
+from app.ai_modul.req_gemma import request_gemma2
+from app.audio_text_modul.text_to_audio import text_to_speech
 import json
 
 def generate_listening_test(num_sentences=5):

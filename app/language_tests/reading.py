@@ -2,7 +2,7 @@ import sys
 import os
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from app.req_gemma import request_gemma2
+from app.ai_modul.req_gemma import request_gemma2
 
 def generate_reading_test(num_sentences=5, num_questions=5):
     prompt = f"""
