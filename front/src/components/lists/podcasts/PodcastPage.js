@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import WordHighlighter from "./WordHighlighter";
+import WordHighlighter from "../../features/WordHighlighter";
 
 function PodcastPage({ onReturnToChat }) {
   const [podcast, setPodcast] = useState(null);

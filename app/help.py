@@ -2,7 +2,7 @@ from vosk import Model, KaldiRecognizer
 import pyaudio
 import json
 import wave
-def recognize_speech(model_path="vosk-model-small-en-us-0.15", sample_rate=16000):
+def recognize_speech(model_path="app/vosk-model-small-en-us-0.15", sample_rate=16000):
     # Инициализация модели и распознавателя
     model = Model(model_path)
     recognizer = KaldiRecognizer(model, sample_rate)
@@ -22,7 +22,7 @@ def recognize_speech(model_path="vosk-model-small-en-us-0.15", sample_rate=16000
             print("Распознанный текст:", text)
             return text
         
-def recognize_speech_from_wav(wav_path, model_path="vosk-model-small-en-us-0.15"):
+def recognize_speech_from_wav(wav_path, model_path="app/vosk-model-small-en-us-0.15"):
     # Инициализация модели
     model = Model(model_path)
     

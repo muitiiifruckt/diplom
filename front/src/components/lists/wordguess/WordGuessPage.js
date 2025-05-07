@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import WordHighlighter from "./WordHighlighter";
+import WordHighlighter from "../../features/WordHighlighter";
 
 function WordGuessPage({ onReturnToChat }) {
   const [word, setWord] = useState('');

@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import './App.css';
-import AudioRecorder from './components/AudioRecorder';
-import Message from './components/Message';
-import LoginForm from './components/LoginForm';
-import RegisterForm from './components/RegisterForm';
-import WordGuessPage from './components/WordGuessPage';
-import AnalysisModal from './components/chat_analys';
-import PodcastPage from './components/PodcastPage';
-import TestsPage from './components/TestsPage';
+import './styles/App.css';
+import AudioRecorder from './components/lists/chat/AudioRecorder';
+import Message from './components/lists/chat/Message';
+import LoginForm from './components/auth/LoginForm';
+import RegisterForm from './components/auth/RegisterForm';
+import WordGuessPage from './components/lists/wordguess/WordGuessPage';
+import AnalysisModal from './components/lists/chat/Analysis';
+import PodcastPage from './components/lists/podcasts/PodcastPage';
+import TestsPage from './components/lists/tests/TestsPage';
+import { authService, chatService } from './services/api';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -23,13 +24,8 @@ function App() {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const response = await fetch("http://localhost:8000/api/my-chats", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setChats(data);
-      }
+      const data = await chatService.fetchChats(token);
+      setChats(data);
     } catch (error) {
       console.error("Ошибка загрузки чатов:", error);
     }
@@ -37,44 +33,38 @@ function App() {
   const fetchMessages = async (chatId) => {
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`http://localhost:8000/api/chat/${chatId}/messages`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Преобразуем сообщения к формату, который ожидает Message.js
-        const formatted = data.map(msg => [
-          msg.user_audio_url && {
-            id: `${msg.id}-user-audio`,
-            type: 'audio',
-            content: `http://localhost:8000${msg.user_audio_url}`,
-            sender: 'user',
-            timestamp: msg.timestamp,
-          },
-          msg.user_transcript && {
-            id: `${msg.id}-user`,
-            type: 'text',
-            content: `Ты: ${msg.user_transcript}`,
-            sender: 'user',
-            timestamp: msg.timestamp,
-          },
-          msg.bot_audio_url && {
-            id: `${msg.id}-bot-audio`,
-            type: 'audio',
-            content: `http://localhost:8000${msg.bot_audio_url}`,
-            sender: 'bot',
-            timestamp: msg.timestamp,
-          },
-          msg.bot_transcript && {
-            id: `${msg.id}-bot`,
-            type: 'text',
-            content: `ИИ: ${msg.bot_transcript}`,
-            sender: 'bot',
-            timestamp: msg.timestamp,
-          }
-        ]).flat().filter(Boolean);
-        setMessages(formatted);
-      }
+      const data = await chatService.fetchMessages(chatId, token);
+      const formatted = data.map(msg => [
+        msg.user_audio_url && {
+          id: `${msg.id}-user-audio`,
+          type: 'audio',
+          content: `http://localhost:8000${msg.user_audio_url}`,
+          sender: 'user',
+          timestamp: msg.timestamp,
+        },
+        msg.user_transcript && {
+          id: `${msg.id}-user`,
+          type: 'text',
+          content: `Ты: ${msg.user_transcript}`,
+          sender: 'user',
+          timestamp: msg.timestamp,
+        },
+        msg.bot_audio_url && {
+          id: `${msg.id}-bot-audio`,
+          type: 'audio',
+          content: `http://localhost:8000${msg.bot_audio_url}`,
+          sender: 'bot',
+          timestamp: msg.timestamp,
+        },
+        msg.bot_transcript && {
+          id: `${msg.id}-bot`,
+          type: 'text',
+          content: `ИИ: ${msg.bot_transcript}`,
+          sender: 'bot',
+          timestamp: msg.timestamp,
+        }
+      ]).flat().filter(Boolean);
+      setMessages(formatted);
     } catch (error) {
       console.error("Ошибка загрузки сообщений:", error);
     }
@@ -88,20 +78,9 @@ function App() {
     fetchMessages(id);
   };
   const handleLogin = async (username, password) => {
-    const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
-
     try {
-      const response = await fetch('http://localhost:8000/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString(),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = await authService.login(username, password);
+      if (data.access_token) {
         localStorage.setItem('token', data.access_token);
         setUser({ username });
         setLoginFormVisible(false);
@@ -115,15 +94,8 @@ function App() {
 
   const handleRegister = async (username, password) => {
     try {
-      const response = await fetch('http://localhost:8000/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = await authService.register(username, password);
+      if (data.username) {
         alert('Регистрация прошла успешно. Теперь вы можете войти!');
         setRegisterFormVisible(false);
       } else {
@@ -237,25 +209,16 @@ function App() {
 
   const handleCreateChat = async () => {
     const token = localStorage.getItem("token");
-
     try {
-      const response = await fetch("http://localhost:8000/api/create-chat", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = await chatService.createChat(token);
+      if (data && data.chat_id) {
         setChatId(data.chat_id);
         localStorage.setItem('chatId', data.chat_id);
         setActivePage("chat");
         fetchChats();
         fetchMessages(data.chat_id);
       } else {
-        alert("Ошибка: " + data.detail);
+        alert("Ошибка: " + (data.detail || "Не удалось создать чат"));
       }
     } catch (error) {
       console.error("Ошибка при создании чата:", error);
@@ -286,8 +249,24 @@ function App() {
         </div>
       </div>
 
-      {isLoginFormVisible && <LoginForm onSubmit={handleLogin} />}
-      {isRegisterFormVisible && <RegisterForm onSubmit={handleRegister} />}
+      {isLoginFormVisible && (
+        <LoginForm
+          onLogin={handleLogin}
+          onRegisterClick={() => {
+            setLoginFormVisible(false);
+            setRegisterFormVisible(true);
+          }}
+        />
+      )}
+      {isRegisterFormVisible && (
+        <RegisterForm
+          onRegister={handleRegister}
+          onLoginClick={() => {
+            setRegisterFormVisible(false);
+            setLoginFormVisible(true);
+          }}
+        />
+      )}
 
       {user && activePage === "podcast" && (
         <PodcastPage onReturnToChat={() => setActivePage("chat")} />

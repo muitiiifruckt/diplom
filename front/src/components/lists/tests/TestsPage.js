@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import GrammarTest from './tests/GrammarTest';
-import VocabularyTest from './tests/VocabularyTest';
-import ReadingTest from './tests/ReadingTest';
-import ListeningTest from './tests/ListeningTest';
-import WritingTest from './tests/WritingTest';
-import LevelTest from './tests/LevelTest';
+import GrammarTest from './GrammarTest';
+import VocabularyTest from './VocabularyTest';
+import ReadingTest from './ReadingTest';
+import ListeningTest from './ListeningTest';
+import WritingTest from './WritingTest';
+import LevelTest from './LevelTest';
 
 const testTypes = [
   { key: 'grammar', label: 'Грамматика' },
