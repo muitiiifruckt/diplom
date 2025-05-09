@@ -1,6 +1,3 @@
-import { createContext, useContext, useState } from 'react';
-import { authService } from '../services/api';
-
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -24,13 +21,23 @@ export const AuthProvider = ({ children }) => {
     return { success: false, error: data.detail || 'Неизвестная ошибка' };
   };
 
+  const requestPasswordReset = async (email) => {
+    const response = await authService.requestPasswordReset(email);
+    return response.message;
+  };
+
+  const resetPassword = async (token, newPassword) => {
+    const response = await authService.resetPassword(token, newPassword);
+    return response.message;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, requestPasswordReset, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );

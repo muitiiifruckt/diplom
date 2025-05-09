@@ -12,11 +12,32 @@ export const authService = {
     });
     return response.json();
   },
+
   register: async (username, password) => {
     const response = await fetch(`${API_BASE_URL}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
+    });
+    return response.json();
+  },
+
+  // Запрос на сброс пароля
+  requestPasswordReset: async (email) => {
+    const response = await fetch(`${API_BASE_URL}/request-password-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return response.json();
+  },
+
+  // Сброс пароля
+  resetPassword: async (token, newPassword) => {
+    const response = await fetch(`${API_BASE_URL}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, new_password: newPassword }),
     });
     return response.json();
   }

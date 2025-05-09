@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function LoginForm({ onLogin, onRegisterClick }) {
+function LoginForm({ onLogin, onRegisterClick, onPasswordResetClick }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -28,6 +28,7 @@ function LoginForm({ onLogin, onRegisterClick }) {
       />
       <button type="submit">Войти</button>
       <button type="button" onClick={onRegisterClick}>Регистрация</button>
+      <button type="button" onClick={onPasswordResetClick}>Забыли пароль?</button>
     </form>
   );
 }

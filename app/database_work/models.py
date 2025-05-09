@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, LargeBinary
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, LargeBinary, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import engine, Base
@@ -7,9 +7,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-
     chats = relationship("Chat", back_populates="user")
+    reset_tokens = relationship("PasswordResetToken", back_populates="user")
 
 
 class Chat(Base):
@@ -53,4 +54,16 @@ class Podcast(Base):
     transcript = Column(Text, nullable=True)  # Текст подкаста
     uploaded_at = Column(DateTime, default=datetime.utcnow)  # Дата загрузки
 
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    token = Column(String, unique=True, index=True)
+    expires_at = Column(DateTime)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="reset_tokens")
+    
 Base.metadata.create_all(bind=engine)

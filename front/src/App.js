@@ -9,6 +9,9 @@ import AnalysisModal from './components/lists/chat/Analysis';
 import PodcastPage from './components/lists/podcasts/PodcastPage';
 import TestsPage from './components/lists/tests/TestsPage';
 import { authService, chatService } from './services/api';
+import RequestPasswordResetForm from './components/auth/RequestPasswordResetForm';
+import ResetPasswordForm from './components/auth/ResetPasswordForm';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -19,6 +22,9 @@ function App() {
   const [chats, setChats] = useState([]);
   const [activePage, setActivePage] = useState("chat"); // "chat", "words", "podcast", "tests"
   const [messages, setMessages] = useState([]);
+  const [isRequestPasswordResetFormVisible, setRequestPasswordResetFormVisible] = useState(false);
+  const [isResetPasswordFormVisible, setResetPasswordFormVisible] = useState(false);
+  const token = localStorage.getItem('token');
 
   const fetchChats = async () => {
     const token = localStorage.getItem("token");
@@ -91,6 +97,7 @@ function App() {
       console.error('Ошибка при логине:', error);
     }
   };
+  
 
   const handleRegister = async (username, password) => {
     try {
@@ -119,6 +126,23 @@ function App() {
 
   const resetChat = () => {
     setMessages([]);
+  };
+  const handlePasswordResetRequest = async (email) => {
+    const response = await authService.requestPasswordReset(email);
+    if (response.message) {
+      alert(response.message);  // Сообщение о том, что письмо отправлено
+      setRequestPasswordResetFormVisible(false);  // Закрыть форму запроса сброса пароля
+    }
+  };
+  
+  const handlePasswordReset = async (newPassword) => {
+    if (token) {
+      const response = await authService.resetPassword(token, newPassword);
+      if (response.message) {
+        alert(response.message);  // Сообщение о том, что пароль изменен
+        setResetPasswordFormVisible(false);  // Закрыть форму сброса пароля
+      }
+    }
   };
   
   const handleNewTextMessage = (textPromise) => {
@@ -224,31 +248,30 @@ function App() {
       console.error("Ошибка при создании чата:", error);
     }
   };
+  
 
   return (
     <div className="chat-app">
       <div className="chat-header">
         <h1>Simple Talk</h1>
-
-        <div className="auth-buttons">
-          {user ? (
-            <>
-              <span>{user.username}</span>
-              <button onClick={handleLogout}>Выйти</button>
-              <button onClick={() => setActivePage("words")}>Слова</button>
-              <button onClick={() => setActivePage("podcast")}>🎧 Подкаст</button>
-              <button onClick={handleCreateChat}>Начать чат</button>
-              <button onClick={() => setActivePage("tests")}>Тесты</button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => setLoginFormVisible(true)}>Войти</button>
-              <button onClick={() => setRegisterFormVisible(true)}>Регистрация</button>
-            </>
-          )}
-        </div>
+        {user ? (
+          <div className="header-right">
+            <span className="username">{user.username}</span>
+            <button onClick={handleLogout}>Выйти</button>
+            <button onClick={() => setActivePage("words")}>Слова</button>
+            <button onClick={() => setActivePage("podcast")}>🎧 Подкаст</button>
+            <button onClick={handleCreateChat}>Начать чат</button>
+            <button onClick={() => setActivePage("tests")}>Тесты</button>
+          </div>
+        ) : (
+          <div className="header-right">
+            <button onClick={() => setLoginFormVisible(true)}>Войти</button>
+            <button onClick={() => setRegisterFormVisible(true)}>Регистрация</button>
+          </div>
+        )}
       </div>
 
+      {/* Форма для входа */}
       {isLoginFormVisible && (
         <LoginForm
           onLogin={handleLogin}
@@ -256,11 +279,17 @@ function App() {
             setLoginFormVisible(false);
             setRegisterFormVisible(true);
           }}
+          onPasswordResetClick={() => {
+            setLoginFormVisible(false);
+            setRequestPasswordResetFormVisible(true); // Показываем форму для запроса сброса пароля
+          }}
         />
       )}
+
+      {/* Форма для регистрации */}
       {isRegisterFormVisible && (
         <RegisterForm
-          onRegister={handleRegister}
+          onRegister={handleLogin}
           onLoginClick={() => {
             setRegisterFormVisible(false);
             setLoginFormVisible(true);
@@ -268,13 +297,32 @@ function App() {
         />
       )}
 
+      {!isRequestPasswordResetFormVisible && !isResetPasswordFormVisible && (
+        <button onClick={() => setRequestPasswordResetFormVisible(true)}>Забыли пароль?</button>
+      )}
+
+      {isRequestPasswordResetFormVisible && (
+        <RequestPasswordResetForm
+          onSubmit={handlePasswordResetRequest}
+          onBack={() => setRequestPasswordResetFormVisible(false)}
+        />
+      )}
+
+      {isResetPasswordFormVisible && (
+        <ResetPasswordForm
+          onSubmit={handlePasswordReset}
+          onBack={() => setResetPasswordFormVisible(false)}
+        />
+      )}
+    
+
+      {/* Страницы чатов и контент */}
       {user && activePage === "podcast" && (
         <PodcastPage onReturnToChat={() => setActivePage("chat")} />
       )}
       {user && activePage === "tests" && (
         <TestsPage onReturnToChat={() => setActivePage("chat")} />
       )}
-
       {user && activePage === "words" && (
         <WordGuessPage onReturnToChat={() => setActivePage("chat")} />
       )}
@@ -282,21 +330,23 @@ function App() {
       {user && activePage === "chat" && (
         <div className="chat-layout">
           <div className="chat-list">
-            <button onClick={handleCreateChat}>+ Новый чат</button>
-            {chats.map(chat => (
-              <div
-                key={chat.chat_id}
-                className={`chat-list-item${chatId === chat.chat_id ? ' active' : ''}`}
-                onClick={() => handleSelectChat(chat.chat_id)}
-              >
-                Чат #{chat.chat_id} <br />
-                <span style={{ fontSize: '0.8em', color: '#888' }}>{new Date(chat.created_at).toLocaleString()}</span>
-              </div>
-            ))}
+            <button className="new-chat-btn" onClick={handleCreateChat}>+ Новый чат</button>
+            <div className="chat-list-scroll">
+              {chats.map(chat => (
+                <div
+                  key={chat.chat_id}
+                  className={`chat-list-item${chatId === chat.chat_id ? ' active' : ''}`}
+                  onClick={() => handleSelectChat(chat.chat_id)}
+                >
+                  Чат #{chat.chat_id} <br />
+                  <span className="chat-date">{new Date(chat.created_at).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="chat-main">
             {!chatId ? (
-              <div style={{ textAlign: "center", marginTop: "1rem" }}>Выберите чат или создайте новый</div>
+              <div className="no-chat-selected">Выберите чат или создайте новый</div>
             ) : (
               <>
                 <div className="chat-messages">
@@ -304,11 +354,11 @@ function App() {
                     <Message key={message.id} message={message} />
                   ))}
                 </div>
-                <div className="chat-input">
-                  <AudioRecorder 
-                    onNewAudio={handleNewAudio} 
+                <div className="chat-input-row">
+                  <AudioRecorder
+                    onNewAudio={handleNewAudio}
                     onNewTextMessage={handleNewTextMessage}
-                    chatId={chatId} 
+                    chatId={chatId}
                   />
                   <AnalysisModal />
                 </div>

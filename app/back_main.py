@@ -4,12 +4,15 @@ import os
 from app.audio_text_modul.audio_to_text import recognize_speech_from_wav
 from app.audio_text_modul.text_to_audio import text_to_speech
 from fastapi.staticfiles import StaticFiles
+from .oib.password_recovery import sendEmail
+from datetime import datetime, timedelta
+import secrets
 import logging
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.database_work.database import SessionLocal, engine,get_db
-from .database_work.models import User, Base, Word, Chat, ChatMessagePair, Podcast
-from .database_work.schemas import UserCreate, WordRequest
+from .database_work.models import User, Base, Word, Chat, ChatMessagePair, Podcast, PasswordResetToken
+from .database_work.schemas import UserCreate, WordRequest, PasswordResetRequest, PasswordReset
 from .database_work.crypto import pwd_context,create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from .ai_modul.req_gemma import request_gemma2
@@ -24,6 +27,7 @@ from app.language_tests.listening import generate_listening_test
 from app.language_tests.writing import generate_writing_prompt, evaluate_writing
 from app.language_tests.level_test import generate_level_test, evaluate_level_test
 
+base_url = "http://localhost:8000"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -396,3 +400,98 @@ def get_level_test():
 @app.post("/api/tests/level/evaluate")
 def post_level_evaluate(answers: dict = Body(...)):
     return evaluate_level_test(answers)
+
+
+@app.post("/request-password-reset")
+async def request_password_reset(
+    request: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    print('request',request)
+    # Находим пользователя по email
+    user = db.query(User).filter(User.email == request.email).first()
+    print('user',user)
+    
+    # Даже если пользователь не найден, отправляем одинаковый ответ
+    # для предотвращения утечки информации
+    if user:
+        # Генерируем токен
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(minutes=30)
+
+        # Создаем запись токена
+        reset_token = PasswordResetToken(
+            user_id=user.id,
+            token=token,
+            expires_at=expires_at
+        )
+        db.add(reset_token)
+        db.commit()
+        
+        # Формируем ссылку для сброса
+        reset_link = f"{base_url}/reset-password?token={token}"
+        
+        # Отправляем email
+        email_body = f"""
+        Здравствуйте!
+        
+        Вы запросили сброс пароля. Для создания нового пароля перейдите по ссылке:
+        {reset_link}
+        
+        Ссылка действительна в течение 30 минут.
+        
+        Если вы не запрашивали сброс пароля, проигнорируйте это письмо.
+        """
+        
+        try:
+            sendEmail(
+                subject="Сброс пароля",
+                body=email_body,
+                to_email=request.email,
+                from_email='catcheckrobot@gmail.com'
+            )
+        except Exception as e:
+            # Логируем ошибку, но не сообщаем пользователю
+            print(f"Ошибка отправки email: {e}")
+    
+    return {
+        "message": "Если указанный email зарегистрирован в системе, "
+                  "вам будет отправлено письмо с инструкциями по сбросу пароля"
+    }
+
+@app.post("/reset-password")
+async def reset_password(
+    request: PasswordReset,
+    db: Session = Depends(get_db)
+):
+    # Находим токен
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == request.token,
+        PasswordResetToken.used == False,
+        PasswordResetToken.expires_at > datetime.utcnow()
+    ).first()
+    
+    if not reset_token:
+        raise HTTPException(
+            status_code=400,
+            detail="Недействительная или истекшая ссылка для сброса пароля"
+        )
+    
+    # Находим пользователя
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # Хешируем новый пароль
+    hashed_password = pwd_context.hash(request.new_password)
+    
+    # Обновляем пароль
+    user.hashed_password = hashed_password
+    
+    # Помечаем токен как использованный
+    reset_token.used = True
+    
+    # Сохраняем изменения
+    db.commit()
+    
+    return {"message": "Пароль успешно изменен"}
