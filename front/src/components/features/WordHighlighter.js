@@ -14,22 +14,22 @@ const WordHighlighter = ({ text, selectedWord, onWordClick }) => {
           style={{
             cursor: "pointer",
             marginRight: "0.3em",
-            color: "#333",
+            color: "#e4e6eb",
             padding: "2px 4px",
             borderRadius: "4px",
             transition: "background-color 0.2s ease",
             backgroundColor:
               cleanWord.toLowerCase() === selectedWord?.toLowerCase()
-                ? "#e0f7fa"
+                ? "#5ac8fa"
                 : "transparent",
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = "#e0f0ff";
+            e.target.style.backgroundColor = "#393e46";
           }}
           onMouseLeave={(e) => {
             e.target.style.backgroundColor =
               cleanWord.toLowerCase() === selectedWord?.toLowerCase()
-                ? "#e0f7fa"
+                ? "#5ac8fa"
                 : "transparent";
           }}
         >

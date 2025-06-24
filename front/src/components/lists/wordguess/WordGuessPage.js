@@ -169,61 +169,40 @@ function WordGuessPage({ onReturnToChat }) {
         </div>
       )}
       {showModal && wordInfo && (
-  <div className="modal-overlay" onClick={() => setShowModal(false)} style={overlayStyle}>
-    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={modalStyle}>
-      <button onClick={() => setShowModal(false)} style={closeButtonStyle}>×</button>
-      <h3>Слово: <em>{selectedWord}</em></h3>
-      <p><strong>Перевод:</strong> {wordInfo.translation}</p>
-      {wordInfo.examples && (
-        <div>
-          <strong>Примеры:</strong>
-          <ul>
-            {wordInfo.examples.split('\n').filter(Boolean).map((ex, idx) => (
-              <li key={idx}>{ex}</li>
-            ))}
-          </ul>
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowModal(false)} style={closeButtonStyle}>×</button>
+            <h3>Слово: <em>{selectedWord}</em></h3>
+            <p><strong>Перевод:</strong> {wordInfo.translation}</p>
+            {wordInfo.examples && (
+              <div>
+                <strong>Примеры:</strong>
+                <ul>
+                  {wordInfo.examples.split('\n').filter(Boolean).map((ex, idx) => (
+                    <li key={idx}>{ex}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
-  </div>
-)}
-{generatedImageUrl && (
-  <div className="generated-image-section">
-    <h4>Угадай слово по картинке:</h4>
-    <img
-      key={generatedImageUrl} // ДОБАВЛЯЕМ key !!!
-      src={generatedImageUrl}
-      alt="Generated"
-      style={{ maxWidth: '100%', height: 'auto', marginTop: '10px' }}
-    />
-  </div>
-)}
+      {generatedImageUrl && (
+        <div className="generated-image-section">
+          <h4>Угадай слово по картинке:</h4>
+          <img
+            key={generatedImageUrl} // ДОБАВЛЯЕМ key !!!
+            src={generatedImageUrl}
+            alt="Generated"
+            style={{ maxWidth: '100%', height: 'auto', marginTop: '10px' }}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
 export default WordGuessPage;
-
-
-const overlayStyle = {
-  position: 'fixed',
-  top: 0, left: 0, right: 0, bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 1000
-};
-
-const modalStyle = {
-  backgroundColor: '#fff',
-  padding: '20px',
-  borderRadius: '10px',
-  maxWidth: '500px',
-  width: '90%',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-  position: 'relative'
-};
 
 const closeButtonStyle = {
   position: 'absolute',
@@ -232,5 +211,6 @@ const closeButtonStyle = {
   fontSize: '1.5rem',
   background: 'none',
   border: 'none',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  color: '#e4e6eb'
 };

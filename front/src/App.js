@@ -297,9 +297,7 @@ function App() {
         />
       )}
 
-      {!isRequestPasswordResetFormVisible && !isResetPasswordFormVisible && (
-        <button onClick={() => setRequestPasswordResetFormVisible(true)}>Забыли пароль?</button>
-      )}
+      
 
       {isRequestPasswordResetFormVisible && (
         <RequestPasswordResetForm

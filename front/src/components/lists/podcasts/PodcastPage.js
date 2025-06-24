@@ -32,14 +32,13 @@ function PodcastPage({ onReturnToChat }) {
   if (!podcast) return <div>Загрузка подкаста...</div>;
 
   return (
-    <div style={{ padding: "1rem", position: "relative" }}>
+    <div className="podcast-page">
       <h2>{podcast.title}</h2>
       <audio
         controls
         src={`${API_BASE_URL}${podcast.download_url}`}
-        style={{ width: "100%" }}
       />
-      <div style={{ marginTop: "1rem", lineHeight: "1.6", fontSize: "1.1em" }}>
+      <div className="podcast-transcript">
         <WordHighlighter
           text={podcast.transcript.replace(/\s+/g, " ").trim()}
           selectedWord={selectedWord}
@@ -49,28 +48,8 @@ function PodcastPage({ onReturnToChat }) {
 
       {/* Модальное окно */}
       {showModal && wordInfo && (
-        <div style={{
-          position: "fixed",
-          top: 0, left: 0,
-          width: "100vw", height: "100vh",
-          backgroundColor: "rgba(0,0,0,0.5)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 1000
-        }}
-          onClick={closeModal}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: "1.5rem",
-              borderRadius: "10px",
-              width: "90%",
-              maxWidth: "500px",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-              position: "relative"
-            }}
-            onClick={(e) => e.stopPropagation()} // не закрывать при клике внутри
-          >
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closeModal}
               style={{
@@ -80,7 +59,8 @@ function PodcastPage({ onReturnToChat }) {
                 background: "transparent",
                 border: "none",
                 fontSize: "1.2rem",
-                cursor: "pointer"
+                cursor: "pointer",
+                color: "#e4e6eb"
               }}
             >
               &times;
